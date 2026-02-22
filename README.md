@@ -115,13 +115,3 @@ Any third-party names mentioned are trademarks of their respective owners.
 * [ ] Multi-provider support
 * [ ] Capability discovery UI
 * [ ] Observability layer
-
----
-
-If você quiser, posso:
-
-* Ajustar o tom (mais técnico, mais minimalista ou mais “open source community”)
-* Escrever uma versão mais enxuta
-* Ou estruturar um README ainda mais arquitetural (com diagramas e seções técnicas mais profundas)
-
-Qual estilo você quer que o MINE transmita?
