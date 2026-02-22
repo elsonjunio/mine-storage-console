@@ -82,10 +82,10 @@ MINE is composed of multiple repositories:
 *(Example placeholder — adjust to your stack)*
 
 ```bash
-git clone https://github.com/your-org/mine.git
-cd mine
+git clone https://github.com/elsonjunio/mine-storage-console.git
+cd mine-storage-console
 poetry install
-poetry run uvicorn app.main:app --reload
+poetry run uvicorn mine_backend.main:app --reload
 ```
 
 ---
