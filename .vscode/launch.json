@@ -6,6 +6,21 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "pytest",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "tests",
+                "-v"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
             "name": "FastAPI (Poetry + Uvicorn)",
             "type": "debugpy",
             "request": "launch",
@@ -52,6 +67,22 @@
                 "host": "localhost",
                 "port": 5678
             }
+        },
+        {
+          "name": "ng serve (mine_ui)",
+          "type": "chrome",
+          "request": "launch",
+          "preLaunchTask": "npm: start (mine_ui)",
+          "url": "http://localhost:4200/",
+          "webRoot": "${workspaceFolder}/mine_ui"
+        },
+        {
+          "name": "ng test",
+          "type": "chrome",
+          "request": "launch",
+          "preLaunchTask": "npm: test (mine_ui)",
+          "url": "http://localhost:9876/debug.html",
+          "webRoot": "${workspaceFolder}/mine_ui"
         }
     ]
 }
