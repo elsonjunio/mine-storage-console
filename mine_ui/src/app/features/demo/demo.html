@@ -1,0 +1,241 @@
+<div class="min-h-screen px-6 py-10">
+  <div class="mx-auto max-w-4xl space-y-12">
+
+    <h1 class="text-3xl font-bold">UI Component Demo</h1>
+
+    <!-- ── Buttons ──────────────────────────────────────────────── -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold border-b border-slate-200 pb-2">Buttons</h2>
+
+      <div class="space-y-3">
+        <p class="text-sm text-slate-500">Variants</p>
+        <div class="flex flex-wrap gap-3">
+          <ui-button>Primary</ui-button>
+          <ui-button variant="secondary">Secondary</ui-button>
+          <ui-button variant="destructive">Destructive</ui-button>
+          <ui-button variant="outline">Outline</ui-button>
+          <ui-button variant="ghost">Ghost</ui-button>
+        </div>
+      </div>
+
+      <div class="space-y-3">
+        <p class="text-sm text-slate-500">States</p>
+        <div class="flex flex-wrap gap-3">
+          <ui-button [loading]="loadingButton">Loading</ui-button>
+          <ui-button [disabled]="true">Disabled</ui-button>
+          <ui-button type="submit">Submit</ui-button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Badges ───────────────────────────────────────────────── -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold border-b border-slate-200 pb-2">Badges</h2>
+      <div class="flex flex-wrap gap-3">
+        <ui-badge variant="info">Info</ui-badge>
+        <ui-badge variant="success">Success</ui-badge>
+        <ui-badge variant="warning">Warning</ui-badge>
+        <ui-badge variant="error">Error</ui-badge>
+      </div>
+    </section>
+
+    <!-- ── Inputs ───────────────────────────────────────────────── -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold border-b border-slate-200 pb-2">Text Input</h2>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <ui-input-text
+          placeholder="No label"
+          [value]="inputValue"
+          (valueChange)="inputValue = $event"
+        />
+        <ui-input-text
+          label="Bucket name"
+          placeholder="my-bucket"
+          value="media-assets"
+        />
+        <ui-input-text
+          label="Access key"
+          placeholder="Enter key..."
+          variant="error"
+          errorMessage="Invalid access key format"
+        />
+        <ui-input-text
+          label="Disabled field"
+          value="read-only value"
+          [disabled]="true"
+        />
+        <ui-input-text
+          label="Password"
+          type="password"
+          placeholder="••••••••"
+        />
+      </div>
+    </section>
+
+    <!-- ── Select ───────────────────────────────────────────────── -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold border-b border-slate-200 pb-2">Select</h2>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <ui-select
+          label="Storage provider"
+          [options]="selectOptions"
+          [value]="selectValue"
+          (valueChange)="selectValue = $event"
+        />
+        <ui-select
+          label="Disabled"
+          [options]="selectOptions"
+          value="minio"
+          [disabled]="true"
+        />
+      </div>
+    </section>
+
+    <!-- ── Checkboxes ────────────────────────────────────────────── -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold border-b border-slate-200 pb-2">Checkbox</h2>
+      <div class="flex flex-wrap gap-6">
+        <ui-checkbox label="Checked" [checked]="checkboxChecked" />
+        <ui-checkbox label="Unchecked" [checked]="checkboxUnchecked" />
+        <ui-checkbox label="Disabled (checked)" [checked]="true" [disabled]="true" />
+        <ui-checkbox label="Disabled (unchecked)" [checked]="false" [disabled]="true" />
+        <ui-checkbox [checked]="true" />
+      </div>
+    </section>
+
+    <!-- ── Toggles ───────────────────────────────────────────────── -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold border-b border-slate-200 pb-2">Toggle</h2>
+      <div class="flex flex-wrap gap-6">
+        <ui-toggle label="Versioning enabled" [checked]="toggleOn" />
+        <ui-toggle label="Object locking" [checked]="toggleOff" />
+        <ui-toggle label="Disabled (on)" [checked]="true" [disabled]="true" />
+        <ui-toggle label="Disabled (off)" [checked]="false" [disabled]="true" />
+        <ui-toggle [checked]="true" />
+      </div>
+    </section>
+
+    <!-- ── Progress Bar ──────────────────────────────────────────── -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold border-b border-slate-200 pb-2">Progress Bar</h2>
+      <div class="space-y-3 max-w-md">
+        <div class="space-y-1">
+          <span class="text-xs text-slate-500">0%</span>
+          <ui-progress-bar [value]="0" />
+        </div>
+        <div class="space-y-1">
+          <span class="text-xs text-slate-500">25%</span>
+          <ui-progress-bar [value]="25" />
+        </div>
+        <div class="space-y-1">
+          <span class="text-xs text-slate-500">60%</span>
+          <ui-progress-bar [value]="60" />
+        </div>
+        <div class="space-y-1">
+          <span class="text-xs text-slate-500">90%</span>
+          <ui-progress-bar [value]="90" />
+        </div>
+        <div class="space-y-1">
+          <span class="text-xs text-slate-500">100%</span>
+          <ui-progress-bar [value]="100" />
+        </div>
+      </div>
+    </section>
+
+    <!-- ── Card ──────────────────────────────────────────────────── -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold border-b border-slate-200 pb-2">Card</h2>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+        <ui-card>
+          <span card-icon class="material-symbols-outlined text-xl">folder</span>
+          <ui-badge card-badge variant="success">Active</ui-badge>
+          <span card-title>media-assets</span>
+          <span card-description>Public bucket for static media files. Versioning enabled.</span>
+          <span card-footer>
+            <span>45,892 objects</span>
+            <span>2.3 TB</span>
+          </span>
+        </ui-card>
+
+        <ui-card [clickable]="false">
+          <span card-icon class="material-symbols-outlined text-xl">lock</span>
+          <ui-badge card-badge variant="warning">Locked</ui-badge>
+          <span card-title>logs-archive</span>
+          <span card-description>Immutable log archive with object lock and legal hold.</span>
+          <span card-footer>
+            <span>890 objects</span>
+            <span>48 GB</span>
+          </span>
+        </ui-card>
+
+      </div>
+    </section>
+
+    <!-- ── Stat Cards ────────────────────────────────────────────── -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold border-b border-slate-200 pb-2">Stat Card</h2>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+
+        <ui-stat-card>
+          <span card-title>Total Storage</span>
+          <span card-icon class="material-symbols-outlined text-2xl text-slate-400">storage</span>
+          <span card-value>45 TB</span>
+          <span card-trend class="text-green-500">↑ 12%</span>
+          <span card-footer class="text-xs text-slate-500">Compared to last month</span>
+        </ui-stat-card>
+
+        <ui-stat-card>
+          <span card-title>Bucket Usage</span>
+          <span card-icon class="material-symbols-outlined text-2xl text-slate-400">folder_open</span>
+          <span card-value>75%</span>
+          <div card-footer class="space-y-2 w-full">
+            <ui-progress-bar [value]="75" />
+            <span class="text-xs text-slate-500">7.5 TB of 10 TB used</span>
+          </div>
+        </ui-stat-card>
+
+      </div>
+    </section>
+
+    <!-- ── Table ─────────────────────────────────────────────────── -->
+    <section class="space-y-4">
+      <h2 class="text-lg font-semibold border-b border-slate-200 pb-2">Table</h2>
+
+      <ui-table>
+        <thead>
+          <tr>
+            <th>Bucket</th>
+            <th>Objects</th>
+            <th>Size</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of tableRows; track row.name) {
+            <tr>
+              <td>{{ row.name }}</td>
+              <td>{{ row.objects.toLocaleString() }}</td>
+              <td>{{ row.size }}</td>
+              <td>
+                @switch (row.status) {
+                  @case ('active') {
+                    <ui-badge variant="success">Active</ui-badge>
+                  }
+                  @case ('locked') {
+                    <ui-badge variant="warning">Locked</ui-badge>
+                  }
+                  @default {
+                    <ui-badge variant="error">Inactive</ui-badge>
+                  }
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </ui-table>
+
+    </section>
+
+  </div>
+</div>

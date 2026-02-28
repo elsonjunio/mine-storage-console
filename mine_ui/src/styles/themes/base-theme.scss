@@ -1,0 +1,61 @@
+@theme {
+  --color-mint-500: oklch(0.72 0.11 178);
+
+  /* ── Global design-system tokens ── */
+  --color-primary:           #13a4ec;
+  --color-primary-dark:      #0e7ab0;
+  --color-primary-light:     #6ec6f3;
+
+  --color-background-light:  #f6f7f8;
+  --color-background-dark:   #101c22;
+  --color-surface-light:     #ffffff;
+  --color-surface-dark:      #182830;
+  --color-border-light:      #e2e8f0;
+  --color-border-dark:       #2a3b47;
+
+  --color-ui-card-1-dark: #182830;
+  --color-ui-card-2-dark: #101c22;
+  --color-ui-b-card-dark: #283944;
+
+  --color-ui-secondary-dark: #182830;
+  --color-ui-t-secondary-dark: #daddde;
+  --color-ui-b-secondary-dark: #2a3b47;
+
+  --color-ui-primary-white: #13a4ec;
+  --color-ui-t-primary-white: oklch(0.9844 0.0075 228.85);
+
+  --color-ui-primary-dark: #13a4ec;
+  --color-ui-t-primary-dark: oklch(0.9844 0.0075 228.85);
+
+
+  --color-ui-danger-white: oklch(0.9705 0.0129 17.38);
+  --color-ui-t-danger-white: oklch(0.5771 0.2152 27.33);
+  --color-ui-b-danger-white: #fed2d2;
+
+
+  --color-ui-danger-dark: #2e2b32;
+  --color-ui-t-danger-dark: #ef4444;
+  --color-ui-b-danger-dark: #543036;
+
+
+  --color-ui-secondary-white: oklch(1 0 0);
+  --color-ui-t-secondary-white: oklch(0.4285 0.0352 259.51);
+  --color-ui-b-secondary-white: #e2e8f0;
+
+
+  --color-ui-danger-dark: #2e2b32;
+  --color-ui-t-danger-dark: #ef4444;
+  --color-ui-b-danger-dark: #543036;
+
+
+  --color-ui-input-primary-white: #f8fafc;
+  --color-ui-t-input-primary-white: #b2bdcd;
+  --color-ui-b-input-primary-white: #dae1e9;
+  --color-ui-a-input-primary-white: #43b7f0;
+
+  --color-ui-input-primary-dark: #101c22;
+  --color-ui-t-input-primary-dark: #64748b;
+  --color-ui-b-input-primary-dark: #2a3b47;
+  --color-ui-a-input-primary-dark: #13a4ec;
+
+}

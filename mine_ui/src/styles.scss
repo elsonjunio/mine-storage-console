@@ -1,0 +1,16 @@
+/* You can add global styles to this file, and also import other style files */
+@use "tailwindcss";
+
+/* temas */
+@use "./styles/themes/base-theme";
+@use "./styles/themes/custom-theme";
+
+.cdk-overlay-container {
+  @apply fixed inset-0 z-50;
+}
+
+
+
+
+
+
