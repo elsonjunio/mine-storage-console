@@ -16,7 +16,7 @@ class BucketStatusResponse(BaseModel):
 
 class BucketVersionResponse(BaseModel):
     bucket: str
-    versioning: str
+    versioning: Optional[str] = None
 
 
 class BucketQuotaResponse(BaseModel):

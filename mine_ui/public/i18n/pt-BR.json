@@ -115,6 +115,8 @@
       "DOWNLOAD": "Baixar",
       "COPY_KEY": "Copiar Chave",
       "DELETE": "Excluir",
+      "MOVE": "Mover",
+      "COPY": "Copiar",
       "PROPERTIES": "Propriedades",
       "LAST_MODIFIED": "Última Modificação",
       "STORAGE_CLASS": "Classe de Armazenamento",
@@ -126,8 +128,10 @@
       "SUBTITLE": "Enviar arquivos para",
       "INTERMEDIATE_LABEL": "Caminho Intermediário (opcional)",
       "INTERMEDIATE_PLACEHOLDER": "sub/pasta/caminho",
-      "DROP_TITLE": "Clique para enviar ou arraste e solte",
+      "DROP_TITLE": "Arraste e solte arquivos ou pastas aqui",
       "DROP_SUBTITLE": "Qualquer tipo de arquivo, até 5 GB por arquivo",
+      "ADD_FILES": "Adicionar arquivos",
+      "ADD_FOLDER": "Adicionar pasta",
       "QUEUE_LABEL": "Fila de Envio ({{count}})",
       "STATUS_DONE": "Concluído",
       "STATUS_UPLOADING": "Enviando...",
@@ -142,6 +146,26 @@
       "MESSAGE": "Tem certeza que deseja excluir \"{{name}}\"? Esta ação não pode ser desfeita.",
       "CANCEL": "Cancelar",
       "CONFIRM": "Excluir"
+    },
+    "MOVE_DIALOG": {
+      "TITLE": "Mover Objeto",
+      "SOURCE": "Objeto de Origem",
+      "DEST_BUCKET": "Bucket de Destino",
+      "DEST_PATH": "Caminho/Prefixo de Destino",
+      "DEST_PATH_PLACEHOLDER": "pasta/subpasta/",
+      "WARNING_TITLE": "Aviso de Operação",
+      "WARNING_BODY": "Mover um objeto o copia para o novo local e exclui permanentemente a origem. Esta ação não pode ser desfeita.",
+      "CANCEL": "Cancelar",
+      "CONFIRM": "Mover Objeto"
+    },
+    "COPY_DIALOG": {
+      "TITLE": "Copiar Objeto",
+      "SOURCE": "Objeto de Origem",
+      "DEST_BUCKET": "Bucket de Destino",
+      "DEST_PATH": "Caminho/Prefixo de Destino",
+      "DEST_PATH_PLACEHOLDER": "pasta/subpasta/",
+      "CANCEL": "Cancelar",
+      "CONFIRM": "Copiar Objeto"
     }
   },
   "TOPBAR": {

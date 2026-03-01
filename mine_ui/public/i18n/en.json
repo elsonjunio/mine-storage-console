@@ -115,6 +115,8 @@
       "DOWNLOAD": "Download",
       "COPY_KEY": "Copy Key",
       "DELETE": "Delete",
+      "MOVE": "Move",
+      "COPY": "Copy",
       "PROPERTIES": "Properties",
       "LAST_MODIFIED": "Last Modified",
       "STORAGE_CLASS": "Storage Class",
@@ -126,8 +128,10 @@
       "SUBTITLE": "Upload files to",
       "INTERMEDIATE_LABEL": "Intermediate Path (optional)",
       "INTERMEDIATE_PLACEHOLDER": "sub/folder/path",
-      "DROP_TITLE": "Click to upload or drag and drop",
+      "DROP_TITLE": "Drag and drop files or folders here",
       "DROP_SUBTITLE": "Any file type, up to 5 GB per file",
+      "ADD_FILES": "Add files",
+      "ADD_FOLDER": "Add folder",
       "QUEUE_LABEL": "Upload Queue ({{count}})",
       "STATUS_DONE": "Done",
       "STATUS_UPLOADING": "Uploading...",
@@ -142,6 +146,26 @@
       "MESSAGE": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
       "CANCEL": "Cancel",
       "CONFIRM": "Delete"
+    },
+    "MOVE_DIALOG": {
+      "TITLE": "Move Object",
+      "SOURCE": "Source Object",
+      "DEST_BUCKET": "Destination Bucket",
+      "DEST_PATH": "Destination Path/Prefix",
+      "DEST_PATH_PLACEHOLDER": "folder/subfolder/",
+      "WARNING_TITLE": "Operation Warning",
+      "WARNING_BODY": "Moving an object copies it to the new location and permanently deletes the source. This action cannot be undone.",
+      "CANCEL": "Cancel",
+      "CONFIRM": "Move Object"
+    },
+    "COPY_DIALOG": {
+      "TITLE": "Copy Object",
+      "SOURCE": "Source Object",
+      "DEST_BUCKET": "Destination Bucket",
+      "DEST_PATH": "Destination Path/Prefix",
+      "DEST_PATH_PLACEHOLDER": "folder/subfolder/",
+      "CANCEL": "Cancel",
+      "CONFIRM": "Copy Object"
     }
   },
   "TOPBAR": {

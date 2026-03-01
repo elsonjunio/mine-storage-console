@@ -380,7 +380,8 @@ export class BucketsComponent implements OnInit {
     rows.forEach(bucket => {
       firstValueFrom(this.api.getBucketVersioning(bucket.name))
         .then(res => {
-          const status = res.data?.versioning ?? 'disabled';
+          const raw = res.data?.versioning;
+          const status = (typeof raw === 'string' ? raw.toLowerCase() : null) ?? 'disabled';
           this.buckets.update(list =>
             list.map(b => b.name === bucket.name ? { ...b, versioning: status } : b),
           );

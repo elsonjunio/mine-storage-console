@@ -115,7 +115,7 @@ class BucketService:
         if not BUCKET_REGEX.match(name):
             raise InconsistentDataError('Invalid bucket name.')
 
-        versioning = self.s3.get_bucket_versioning(name)
+        versioning = self.s3.get_bucket_versioning_status(name)
 
         return {
             'bucket': name,

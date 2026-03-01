@@ -115,6 +115,8 @@
       "DOWNLOAD": "Descargar",
       "COPY_KEY": "Copiar Clave",
       "DELETE": "Eliminar",
+      "MOVE": "Mover",
+      "COPY": "Copiar",
       "PROPERTIES": "Propiedades",
       "LAST_MODIFIED": "Última Modificación",
       "STORAGE_CLASS": "Clase de Almacenamiento",
@@ -126,8 +128,10 @@
       "SUBTITLE": "Subir archivos a",
       "INTERMEDIATE_LABEL": "Ruta Intermedia (opcional)",
       "INTERMEDIATE_PLACEHOLDER": "sub/carpeta/ruta",
-      "DROP_TITLE": "Haz clic para subir o arrastra y suelta",
+      "DROP_TITLE": "Arrastra y suelta archivos o carpetas aquí",
       "DROP_SUBTITLE": "Cualquier tipo de archivo, hasta 5 GB por archivo",
+      "ADD_FILES": "Agregar archivos",
+      "ADD_FOLDER": "Agregar carpeta",
       "QUEUE_LABEL": "Cola de Subida ({{count}})",
       "STATUS_DONE": "Listo",
       "STATUS_UPLOADING": "Subiendo...",
@@ -142,6 +146,26 @@
       "MESSAGE": "¿Estás seguro de que deseas eliminar \"{{name}}\"? Esta acción no se puede deshacer.",
       "CANCEL": "Cancelar",
       "CONFIRM": "Eliminar"
+    },
+    "MOVE_DIALOG": {
+      "TITLE": "Mover Objeto",
+      "SOURCE": "Objeto de Origen",
+      "DEST_BUCKET": "Bucket de Destino",
+      "DEST_PATH": "Ruta/Prefijo de Destino",
+      "DEST_PATH_PLACEHOLDER": "carpeta/subcarpeta/",
+      "WARNING_TITLE": "Advertencia de Operación",
+      "WARNING_BODY": "Mover un objeto lo copia a la nueva ubicación y elimina permanentemente el origen. Esta acción no se puede deshacer.",
+      "CANCEL": "Cancelar",
+      "CONFIRM": "Mover Objeto"
+    },
+    "COPY_DIALOG": {
+      "TITLE": "Copiar Objeto",
+      "SOURCE": "Objeto de Origen",
+      "DEST_BUCKET": "Bucket de Destino",
+      "DEST_PATH": "Ruta/Prefijo de Destino",
+      "DEST_PATH_PLACEHOLDER": "carpeta/subcarpeta/",
+      "CANCEL": "Cancelar",
+      "CONFIRM": "Copiar Objeto"
     }
   },
   "TOPBAR": {
