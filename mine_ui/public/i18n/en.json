@@ -1,0 +1,34 @@
+{
+  "SIDEBAR": {
+    "GROUPS": {
+      "OPERATIONAL": "Operational",
+      "IAM": "IAM",
+      "SYSTEM": "System"
+    },
+    "NAV": {
+      "BUCKETS": "Buckets",
+      "OBJECTS": "Objects",
+      "USERS": "Users",
+      "GROUPS": "Groups",
+      "POLICIES": "Policies",
+      "CREDENTIALS": "Credentials",
+      "NOTIFICATIONS": "Notifications",
+      "QUOTAS": "Quotas",
+      "AUDIT_LOGS": "Audit Logs"
+    },
+    "FOOTER": {
+      "BUILD": "Development Build"
+    }
+  },
+  "TOPBAR": {
+    "SEARCH_PLACEHOLDER": "Search resources...",
+    "USER_MENU": {
+      "THEME": "Theme",
+      "THEME_LIGHT": "Light",
+      "THEME_SYSTEM": "System",
+      "THEME_DARK": "Dark",
+      "LANGUAGE": "Language",
+      "LOGOUT": "Sign out"
+    }
+  }
+}

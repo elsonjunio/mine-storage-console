@@ -1,0 +1,6 @@
+{
+  "apiBaseUrl": "http://localhost:8000",
+  "keycloakUrl": "https://auth.ews.tec.br",
+  "keycloakRealm": "infra",
+  "keycloakClientId": "minio"
+}

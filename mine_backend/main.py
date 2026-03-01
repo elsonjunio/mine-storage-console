@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from mine_backend.api.router import api_router
 from contextlib import asynccontextmanager
 from mine_backend.core.logging_config import setup_logger
@@ -25,6 +26,13 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title='Mine Backend', lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['http://localhost:4200'],
+    allow_methods=['*'],
+    allow_headers=['*'],
+)
 
 app.add_exception_handler(AppException, app_exception_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)
