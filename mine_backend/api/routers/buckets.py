@@ -67,6 +67,18 @@ def delete_bucket(
     return success_response(bucket)
 
 
+@router.get(
+    '/{name}/versioning',
+    response_model=StandardResponse[BucketVersionResponse],
+)
+def get_versioning(
+    name: str,
+    service: BucketService = Depends(get_bucket_service),
+):
+    version = service.get_versioning(name)
+    return success_response(version)
+
+
 @router.put(
     '/{name}/versioning',
     response_model=StandardResponse[BucketVersionResponse],

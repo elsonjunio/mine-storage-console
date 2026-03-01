@@ -18,6 +18,7 @@ dependencies = [
     "cryptography (>=46.0.5,<47.0.0)",
     "python-json-logger (>=4.0.0,<5.0.0)",
     "mine-spec @ git+https://github.com/elsonjunio/mine-spec.git@v0.1.2",
+    "python-multipart (>=0.0.22,<0.0.23)",
 ]
 
 [tool.poetry]

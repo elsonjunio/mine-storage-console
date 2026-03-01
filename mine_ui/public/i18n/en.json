@@ -20,6 +20,47 @@
       "BUILD": "Development Build"
     }
   },
+  "BUCKETS": {
+    "TITLE": "Buckets",
+    "DESCRIPTION": "Manage your S3-compatible storage buckets and access configurations.",
+    "CREATE_BTN": "Create Bucket",
+    "CREATE_TITLE": "New Bucket",
+    "CREATE_PLACEHOLDER": "bucket-name",
+    "CREATE_CONFIRM": "Create",
+    "CREATE_CANCEL": "Cancel",
+    "DELETE_TITLE": "Delete bucket",
+    "FILTER_PLACEHOLDER": "Filter buckets...",
+    "STATS": {
+      "TOTAL_BUCKETS": "Total Buckets",
+      "TOTAL_OBJECTS": "Total Objects",
+      "OBJECTS_LABEL": "objects",
+      "TOTAL_SIZE": "Total Size"
+    },
+    "TABLE": {
+      "NAME": "Name",
+      "CREATED": "Created",
+      "OBJECTS": "Objects",
+      "SIZE": "Size",
+      "VERSIONING": "Versioning",
+      "ACTIONS": "Actions",
+      "EMPTY": "No buckets found. Create one to get started.",
+      "NO_RESULTS": "No buckets match your filter.",
+      "SHOWING": "Showing {{from}}–{{to}} of {{total}} buckets",
+      "PREVIOUS": "Previous",
+      "NEXT": "Next"
+    },
+    "VERSIONING": {
+      "ENABLED": "Enabled",
+      "SUSPENDED": "Suspended",
+      "DISABLED": "Disabled"
+    },
+    "DELETE_DIALOG": {
+      "TITLE": "Delete bucket",
+      "MESSAGE": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "CANCEL": "Cancel",
+      "CONFIRM": "Delete"
+    }
+  },
   "DASHBOARD": {
     "WELCOME": "Welcome back, {{name}}",
     "SUBTITLE_ADMIN": "Here's an overview of your storage system.",
@@ -44,6 +85,63 @@
       "NAME": "Name",
       "CREATED": "Created",
       "EMPTY": "No buckets found."
+    }
+  },
+  "BUCKET_DETAIL": {
+    "CREATED": "Created",
+    "ACTIVE": "Active",
+    "TOTAL_SIZE": "Total Size",
+    "OBJECT_COUNT": "Objects",
+    "FILTER_PLACEHOLDER": "Filter objects...",
+    "UPLOAD_BTN": "Upload",
+    "LOAD_MORE": "Load more",
+    "COMING_SOON": "Coming soon",
+    "TABS": {
+      "OBJECTS": "Objects",
+      "MANAGEMENT": "Management",
+      "SECURITY": "Security",
+      "EVENTS": "Events"
+    },
+    "TABLE": {
+      "NAME": "Name",
+      "MODIFIED": "Last Modified",
+      "SIZE": "Size",
+      "STORAGE_CLASS": "Storage Class",
+      "EMPTY": "This bucket is empty.",
+      "NO_RESULTS": "No objects match your filter."
+    },
+    "DRAWER": {
+      "TITLE": "Object Details",
+      "DOWNLOAD": "Download",
+      "COPY_KEY": "Copy Key",
+      "DELETE": "Delete",
+      "PROPERTIES": "Properties",
+      "LAST_MODIFIED": "Last Modified",
+      "STORAGE_CLASS": "Storage Class",
+      "TAGS": "Tags",
+      "OBJECT_KEY": "Object Key"
+    },
+    "UPLOAD": {
+      "TITLE": "Upload Objects",
+      "SUBTITLE": "Upload files to",
+      "INTERMEDIATE_LABEL": "Intermediate Path (optional)",
+      "INTERMEDIATE_PLACEHOLDER": "sub/folder/path",
+      "DROP_TITLE": "Click to upload or drag and drop",
+      "DROP_SUBTITLE": "Any file type, up to 5 GB per file",
+      "QUEUE_LABEL": "Upload Queue ({{count}})",
+      "STATUS_DONE": "Done",
+      "STATUS_UPLOADING": "Uploading...",
+      "STATUS_ERROR": "Error",
+      "STATUS_PENDING": "Pending",
+      "CANCEL_ALL": "Cancel All",
+      "CLOSE": "Close",
+      "START": "Upload"
+    },
+    "DELETE_DIALOG": {
+      "TITLE": "Delete object",
+      "MESSAGE": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+      "CANCEL": "Cancel",
+      "CONFIRM": "Delete"
     }
   },
   "TOPBAR": {

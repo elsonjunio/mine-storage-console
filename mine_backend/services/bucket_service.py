@@ -110,6 +110,18 @@ class BucketService:
             'name': name,
         }
 
+    def get_versioning(self, name: str):
+
+        if not BUCKET_REGEX.match(name):
+            raise InconsistentDataError('Invalid bucket name.')
+
+        versioning = self.s3.get_bucket_versioning(name)
+
+        return {
+            'bucket': name,
+            'versioning': versioning,
+        }
+
     def set_versioning(
         self,
         name: str,

@@ -20,6 +20,47 @@
       "BUILD": "Build de Desenvolvimento"
     }
   },
+  "BUCKETS": {
+    "TITLE": "Buckets",
+    "DESCRIPTION": "Gerencie seus buckets de armazenamento S3 compatível e configurações de acesso.",
+    "CREATE_BTN": "Criar Bucket",
+    "CREATE_TITLE": "Novo Bucket",
+    "CREATE_PLACEHOLDER": "nome-do-bucket",
+    "CREATE_CONFIRM": "Criar",
+    "CREATE_CANCEL": "Cancelar",
+    "DELETE_TITLE": "Excluir bucket",
+    "FILTER_PLACEHOLDER": "Filtrar buckets...",
+    "STATS": {
+      "TOTAL_BUCKETS": "Total de Buckets",
+      "TOTAL_OBJECTS": "Total de Objetos",
+      "OBJECTS_LABEL": "objetos",
+      "TOTAL_SIZE": "Tamanho Total"
+    },
+    "TABLE": {
+      "NAME": "Nome",
+      "CREATED": "Criado em",
+      "OBJECTS": "Objetos",
+      "SIZE": "Tamanho",
+      "VERSIONING": "Versionamento",
+      "ACTIONS": "Ações",
+      "EMPTY": "Nenhum bucket encontrado. Crie um para começar.",
+      "NO_RESULTS": "Nenhum bucket corresponde ao filtro.",
+      "SHOWING": "Exibindo {{from}}–{{to}} de {{total}} buckets",
+      "PREVIOUS": "Anterior",
+      "NEXT": "Próximo"
+    },
+    "VERSIONING": {
+      "ENABLED": "Ativado",
+      "SUSPENDED": "Suspenso",
+      "DISABLED": "Desativado"
+    },
+    "DELETE_DIALOG": {
+      "TITLE": "Excluir bucket",
+      "MESSAGE": "Tem certeza que deseja excluir \"{{name}}\"? Esta ação não pode ser desfeita.",
+      "CANCEL": "Cancelar",
+      "CONFIRM": "Excluir"
+    }
+  },
   "DASHBOARD": {
     "WELCOME": "Bem-vindo de volta, {{name}}",
     "SUBTITLE_ADMIN": "Aqui está uma visão geral do seu sistema de armazenamento.",
@@ -44,6 +85,63 @@
       "NAME": "Nome",
       "CREATED": "Criado em",
       "EMPTY": "Nenhum bucket encontrado."
+    }
+  },
+  "BUCKET_DETAIL": {
+    "CREATED": "Criado em",
+    "ACTIVE": "Ativo",
+    "TOTAL_SIZE": "Tamanho Total",
+    "OBJECT_COUNT": "Objetos",
+    "FILTER_PLACEHOLDER": "Filtrar objetos...",
+    "UPLOAD_BTN": "Enviar",
+    "LOAD_MORE": "Carregar mais",
+    "COMING_SOON": "Em breve",
+    "TABS": {
+      "OBJECTS": "Objetos",
+      "MANAGEMENT": "Gerenciamento",
+      "SECURITY": "Segurança",
+      "EVENTS": "Eventos"
+    },
+    "TABLE": {
+      "NAME": "Nome",
+      "MODIFIED": "Última Modificação",
+      "SIZE": "Tamanho",
+      "STORAGE_CLASS": "Classe de Armazenamento",
+      "EMPTY": "Este bucket está vazio.",
+      "NO_RESULTS": "Nenhum objeto corresponde ao filtro."
+    },
+    "DRAWER": {
+      "TITLE": "Detalhes do Objeto",
+      "DOWNLOAD": "Baixar",
+      "COPY_KEY": "Copiar Chave",
+      "DELETE": "Excluir",
+      "PROPERTIES": "Propriedades",
+      "LAST_MODIFIED": "Última Modificação",
+      "STORAGE_CLASS": "Classe de Armazenamento",
+      "TAGS": "Tags",
+      "OBJECT_KEY": "Chave do Objeto"
+    },
+    "UPLOAD": {
+      "TITLE": "Enviar Objetos",
+      "SUBTITLE": "Enviar arquivos para",
+      "INTERMEDIATE_LABEL": "Caminho Intermediário (opcional)",
+      "INTERMEDIATE_PLACEHOLDER": "sub/pasta/caminho",
+      "DROP_TITLE": "Clique para enviar ou arraste e solte",
+      "DROP_SUBTITLE": "Qualquer tipo de arquivo, até 5 GB por arquivo",
+      "QUEUE_LABEL": "Fila de Envio ({{count}})",
+      "STATUS_DONE": "Concluído",
+      "STATUS_UPLOADING": "Enviando...",
+      "STATUS_ERROR": "Erro",
+      "STATUS_PENDING": "Aguardando",
+      "CANCEL_ALL": "Cancelar Tudo",
+      "CLOSE": "Fechar",
+      "START": "Enviar"
+    },
+    "DELETE_DIALOG": {
+      "TITLE": "Excluir objeto",
+      "MESSAGE": "Tem certeza que deseja excluir \"{{name}}\"? Esta ação não pode ser desfeita.",
+      "CANCEL": "Cancelar",
+      "CONFIRM": "Excluir"
     }
   },
   "TOPBAR": {

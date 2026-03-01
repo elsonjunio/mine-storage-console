@@ -1,476 +1,289 @@
 <!DOCTYPE html>
-
 <html class="dark" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Unified Storage Console - Buckets Home</title>
-<!-- Google Fonts -->
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
-<!-- Material Symbols -->
+<title>Upload Objects - Production Assets</title>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<!-- Tailwind CSS -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<!-- Theme Configuration -->
-<script>
+<script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     colors: {
                         "primary": "#13a4ec",
-                        "primary-dark": "#0e7ab0",
+                        "primary-hover": "#0e8bc7",
                         "background-light": "#f6f7f8",
-                        "background-dark": "#09090b",
-                        "sidebar-dark": "#111c22",
-                        "surface-dark": "#18181b",
-                        "border-dark": "#27272a",
+                        "background-dark": "#101c22",
+                        "card-dark": "#16262e",
+                        "input-dark": "#1e333e",
+                        "border-dark": "#2a4552",
                     },
                     fontFamily: {
-                        "display": ["Inter", "sans-serif"]
+                        "display": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
                     },
-                    borderRadius: {"DEFAULT": "0.375rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
                 },
             },
         }
     </script>
 <style>
-        /* Custom scrollbar for dark mode */
-        ::-webkit-scrollbar {
+        .custom-scrollbar::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
-        ::-webkit-scrollbar-track {
-            background: #18181b; 
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1e333e; 
         }
-        ::-webkit-scrollbar-thumb {
-            background: #27272a; 
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #2a4552; 
             border-radius: 4px;
         }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #3f3f46; 
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #3a5f70; 
         }
     </style>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased overflow-hidden h-screen flex">
-<!-- Sidebar -->
-<aside class="w-64 flex-shrink-0 flex flex-col border-r border-border-dark bg-sidebar-dark z-20 h-full">
-<!-- Brand / Logo Area -->
-<div class="h-16 flex items-center px-6 border-b border-border-dark bg-[#0f191f]">
-<div class="flex items-center gap-3">
-<div class="bg-primary/20 p-1.5 rounded-lg text-primary">
-<span class="material-symbols-outlined text-[24px]">dns</span>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display antialiased selection:bg-primary/30 selection:text-white relative">
+<div aria-hidden="true" class="relative flex h-screen w-full flex-col overflow-hidden blur-[2px] pointer-events-none select-none">
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-border-dark px-6 py-3 bg-white dark:bg-background-dark z-10">
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-3 text-slate-900 dark:text-white">
+<div class="size-8 bg-primary/20 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">cloud</span>
 </div>
-<h1 class="text-white text-base font-semibold tracking-tight">Mine Console</h1>
+<h2 class="text-lg font-bold leading-tight tracking-[-0.015em]">Storage Dashboard</h2>
 </div>
-</div>
-<!-- Navigation -->
-<nav class="flex-1 overflow-y-auto py-6 px-3 space-y-8">
-<!-- Group: Operational -->
-<div>
-<h3 class="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Operational</h3>
-<div class="space-y-1">
-<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg bg-primary/10 text-primary group transition-colors" href="#">
-<span class="material-symbols-outlined text-[20px] filled">database</span>
-                        Buckets
-                    </a>
-<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors" href="#">
-<span class="material-symbols-outlined text-[20px]">folder_open</span>
-                        Objects
-                    </a>
-</div>
-</div>
-<!-- Group: IAM -->
-<div>
-<h3 class="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">IAM</h3>
-<div class="space-y-1">
-<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors" href="#">
-<span class="material-symbols-outlined text-[20px]">group</span>
-                        Users
-                    </a>
-<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors" href="#">
-<span class="material-symbols-outlined text-[20px]">groups</span>
-                        Groups
-                    </a>
-<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors" href="#">
-<span class="material-symbols-outlined text-[20px]">description</span>
-                        Policies
-                    </a>
-<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors" href="#">
-<span class="material-symbols-outlined text-[20px]">key</span>
-                        Credentials
-                    </a>
-</div>
-</div>
-<!-- Group: System -->
-<div>
-<h3 class="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">System</h3>
-<div class="space-y-1">
-<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors" href="#">
-<span class="material-symbols-outlined text-[20px]">notifications</span>
-                        Notifications
-                        <span class="ml-auto bg-primary/20 text-primary py-0.5 px-2 rounded-full text-xs font-bold">2</span>
-</a>
-<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors" href="#">
-<span class="material-symbols-outlined text-[20px]">pie_chart</span>
-                        Quotas
-                    </a>
-<a class="flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-100 hover:bg-white/5 transition-colors" href="#">
-<span class="material-symbols-outlined text-[20px]">history_edu</span>
-                        Audit Logs
-                    </a>
-</div>
-</div>
-</nav>
-<!-- Sidebar Footer -->
-<div class="p-4 border-t border-border-dark">
-<div class="flex items-center gap-3">
-<div class="flex flex-col">
-<p class="text-xs text-slate-500">v2.4.0</p>
-<p class="text-xs text-slate-600">Stable Build</p>
-</div>
-</div>
-</div>
-</aside>
-<!-- Main Content Area -->
-<main class="flex-1 flex flex-col h-full relative overflow-hidden bg-background-light dark:bg-background-dark">
-<!-- Header -->
-<header class="h-16 border-b border-border-dark bg-sidebar-dark flex items-center justify-between px-6 z-10 flex-shrink-0">
-<!-- Left Side Title (Context) -->
-<div class="flex items-center">
-<h2 class="text-white text-lg font-medium tracking-tight">Buckets Management</h2>
-</div>
-<!-- Right Side Controls -->
-<div class="flex items-center gap-4">
-<!-- Search -->
-<div class="relative hidden md:block w-64">
-<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
+<div class="hidden md:flex flex-col min-w-40 h-10 w-96">
+<div class="flex w-full flex-1 items-stretch rounded-lg h-full border border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-input-dark overflow-hidden">
+<div class="text-slate-400 flex items-center justify-center pl-3">
 <span class="material-symbols-outlined text-[20px]">search</span>
-</span>
-<input class="w-full bg-surface-dark border border-border-dark text-slate-200 text-sm rounded-lg focus:ring-1 focus:ring-primary focus:border-primary block pl-10 p-2 placeholder-slate-500" placeholder="Search resources..." type="text"/>
-<div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-<span class="text-xs text-slate-600 border border-slate-700 rounded px-1.5 py-0.5">⌘K</span>
+</div>
+<input class="flex w-full min-w-0 flex-1 resize-none overflow-hidden bg-transparent text-slate-900 dark:text-white focus:outline-0 border-none h-full placeholder:text-slate-400 px-3 text-sm" placeholder="Search buckets, objects..."/>
 </div>
 </div>
-<div class="h-6 w-px bg-border-dark mx-2"></div>
-<!-- Notifications -->
-<button class="relative p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/5">
-<span class="material-symbols-outlined text-[24px]">notifications</span>
-<span class="absolute top-2 right-2 flex h-2 w-2">
-<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-</span>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden lg:flex items-center gap-6">
+<a class="text-slate-500 dark:text-slate-400 hover:text-primary text-sm font-medium transition-colors" href="#">Dashboard</a>
+<a class="text-primary text-sm font-medium" href="#">Buckets</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-primary text-sm font-medium transition-colors" href="#">Users</a>
+<a class="text-slate-500 dark:text-slate-400 hover:text-primary text-sm font-medium transition-colors" href="#">Settings</a>
+</nav>
+<div class="flex items-center gap-4 border-l border-slate-200 dark:border-border-dark pl-6">
+<button class="text-slate-500 dark:text-slate-400 hover:text-white transition-colors">
+<span class="material-symbols-outlined">notifications</span>
 </button>
-<!-- Profile Dropdown Trigger -->
-<button class="flex items-center gap-2 p-1 pr-3 rounded-full hover:bg-white/5 border border-transparent hover:border-border-dark transition-all">
-<div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-medium text-xs">
-                        JS
-                    </div>
-<span class="text-sm font-medium text-slate-300 hidden md:block">Jane Smith</span>
-<span class="material-symbols-outlined text-[16px] text-slate-500">expand_more</span>
-</button>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-9 ring-2 ring-primary/20 cursor-pointer" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDlpngdu9cgvrhlgI_trvgmK2CatZVRcH6SLUcMRtcKqbqJFMLoBRRmeld-QgFC8bXj0pvYd7cNtUYDomtH-TY46RkIn7JC16-T-wTPrDpz6W0KGggXDGPUx67q2FIUoZ74ARCyFsYH3o0BzihAFJ01YvDT-XzGMJeCbwDhAvi0V_k5ofuS8ZOJw58wjlMTUUpNPFzptFb6J87Agdix0GUv4A4CBgnL_QqkkeZLEHbJSDLYlGrDw6NF7z_zc-GKn8x6GbkolCbsICU");'></div>
+</div>
 </div>
 </header>
-<!-- Scrollable Page Content -->
-<div class="flex-1 overflow-y-auto p-6 md:p-8">
-<div class="max-w-7xl mx-auto space-y-6">
-<!-- Breadcrumbs -->
-<nav aria-label="Breadcrumb" class="flex text-sm text-slate-500">
-<ol class="inline-flex items-center space-x-1 md:space-x-3">
-<li class="inline-flex items-center">
-<a class="hover:text-primary transition-colors" href="#">Home</a>
-</li>
-<li>
-<div class="flex items-center">
-<span class="material-symbols-outlined text-[16px] mx-1">chevron_right</span>
-<a class="hover:text-primary transition-colors" href="#">Operational</a>
+<div class="flex flex-1 overflow-hidden">
+<main class="flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+<div class="px-6 py-6 md:px-10 max-w-7xl mx-auto w-full">
+<div class="flex flex-wrap items-center gap-2 mb-6 text-sm">
+<a class="text-slate-500 dark:text-slate-400 hover:text-primary transition-colors font-medium" href="#">Operational</a>
+<span class="text-slate-600 dark:text-slate-600">/</span>
+<a class="text-slate-500 dark:text-slate-400 hover:text-primary transition-colors font-medium" href="#">Buckets</a>
+<span class="text-slate-600 dark:text-slate-600">/</span>
+<a class="text-slate-500 dark:text-slate-400 hover:text-primary transition-colors font-medium" href="#">production-assets</a>
+<span class="text-slate-600 dark:text-slate-600">/</span>
+<span class="text-slate-900 dark:text-white font-medium">Upload</span>
 </div>
-</li>
-<li aria-current="page">
-<div class="flex items-center">
-<span class="material-symbols-outlined text-[16px] mx-1">chevron_right</span>
-<span class="text-slate-200 font-medium">Buckets</span>
-</div>
-</li>
-</ol>
-</nav>
-<!-- Page Header & Stats -->
-<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-2">
+<div class="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
 <div>
-<h1 class="text-3xl font-bold text-white tracking-tight mb-2">Buckets</h1>
-<p class="text-slate-400 max-w-2xl">Manage your S3-compatible storage buckets, access policies, and versioning configurations.</p>
+<div class="flex items-center gap-3 mb-2">
+<h1 class="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight">production-assets</h1>
+<span class="inline-flex items-center rounded-full bg-green-500/10 px-2.5 py-0.5 text-xs font-medium text-green-500 ring-1 ring-inset ring-green-500/20">Online</span>
 </div>
-<div class="flex-shrink-0">
-<button class="flex items-center justify-center gap-2 bg-primary hover:bg-primary-dark text-white font-medium py-2.5 px-5 rounded-lg transition-colors shadow-lg shadow-primary/20">
-<span class="material-symbols-outlined text-[20px]">add</span>
-                            Create Bucket
-                        </button>
-</div>
-</div>
-<!-- Stats Cards -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-<!-- Card 1 -->
-<div class="bg-surface-dark border border-border-dark rounded-xl p-5 shadow-sm">
-<div class="flex items-center justify-between mb-4">
-<h3 class="text-slate-400 text-sm font-medium">Total Storage Used</h3>
-<span class="p-1.5 bg-primary/10 text-primary rounded-md">
-<span class="material-symbols-outlined text-[20px]">hard_drive</span>
-</span>
-</div>
-<div class="flex items-baseline gap-2">
-<span class="text-2xl font-bold text-white">45.2 TB</span>
-<span class="text-xs text-green-400 flex items-center">
-<span class="material-symbols-outlined text-[14px]">trending_up</span>
-                                +2.5%
-                            </span>
-</div>
-<div class="w-full bg-slate-800 rounded-full h-1.5 mt-3">
-<div class="bg-primary h-1.5 rounded-full" style="width: 45%"></div>
+<div class="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px]">public</span>
+                                    Region: us-east-1
+                                </span>
+<span class="w-1 h-1 rounded-full bg-slate-700"></span>
+<span>Created: Oct 24, 2023</span>
 </div>
 </div>
-<!-- Card 2 -->
-<div class="bg-surface-dark border border-border-dark rounded-xl p-5 shadow-sm">
-<div class="flex items-center justify-between mb-4">
-<h3 class="text-slate-400 text-sm font-medium">Object Count</h3>
-<span class="p-1.5 bg-purple-500/10 text-purple-400 rounded-md">
-<span class="material-symbols-outlined text-[20px]">data_object</span>
-</span>
-</div>
-<div class="flex items-baseline gap-2">
-<span class="text-2xl font-bold text-white">1.2M</span>
-<span class="text-xs text-slate-500">Total objects</span>
-</div>
-<p class="text-xs text-slate-500 mt-3">Across 8 active buckets</p>
-</div>
-<!-- Card 3 -->
-<div class="bg-surface-dark border border-border-dark rounded-xl p-5 shadow-sm">
-<div class="flex items-center justify-between mb-4">
-<h3 class="text-slate-400 text-sm font-medium">Bandwidth (30d)</h3>
-<span class="p-1.5 bg-amber-500/10 text-amber-400 rounded-md">
-<span class="material-symbols-outlined text-[20px]">monitoring</span>
-</span>
-</div>
-<div class="flex items-baseline gap-2">
-<span class="text-2xl font-bold text-white">840 GB</span>
-<span class="text-xs text-slate-500">Outbound</span>
-</div>
-<p class="text-xs text-slate-500 mt-3">Current throughput: 12MB/s</p>
+<div class="flex gap-3">
+<button class="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-hover transition-all shadow-sm">
+<span class="material-symbols-outlined mr-2 text-[18px]">upload</span>
+                                Upload Object
+                            </button>
 </div>
 </div>
-<!-- Filters & Toolbar -->
-<div class="flex flex-col sm:flex-row justify-between items-center gap-4 bg-surface-dark/50 p-2 rounded-lg border border-border-dark/50">
-<div class="flex items-center gap-2 w-full sm:w-auto">
-<div class="relative w-full sm:w-64">
-<span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500">
-<span class="material-symbols-outlined text-[18px]">filter_list</span>
-</span>
-<input class="w-full bg-background-dark border border-border-dark text-slate-200 text-sm rounded-md focus:ring-1 focus:ring-primary focus:border-primary block pl-10 p-2 placeholder-slate-600" placeholder="Filter buckets..." type="text"/>
+<div class="border-b border-slate-200 dark:border-border-dark mb-6">
+<nav aria-label="Tabs" class="-mb-px flex space-x-8">
+<a aria-current="page" class="border-primary text-primary whitespace-nowrap border-b-2 py-4 px-1 text-sm font-bold" href="#">Objects</a>
+<a class="border-transparent text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:text-slate-700 dark:hover:text-slate-300 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium" href="#">Management</a>
+<a class="border-transparent text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:text-slate-700 dark:hover:text-slate-300 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium" href="#">Security</a>
+<a class="border-transparent text-slate-500 dark:text-slate-400 hover:border-slate-300 hover:text-slate-700 dark:hover:text-slate-300 whitespace-nowrap border-b-2 py-4 px-1 text-sm font-medium" href="#">Events</a>
+</nav>
+</div>
+<div class="bg-white dark:bg-card-dark rounded-xl border border-slate-200 dark:border-border-dark overflow-hidden">
+<div class="px-6 py-4 border-b border-slate-200 dark:border-border-dark flex items-center justify-between">
+<div class="text-sm font-medium text-slate-500">
+                                48 objects found
+                             </div>
+<div class="flex gap-2">
+<button class="p-1 text-slate-400 hover:text-white"><span class="material-symbols-outlined">refresh</span></button>
+<button class="p-1 text-slate-400 hover:text-white"><span class="material-symbols-outlined">filter_list</span></button>
 </div>
 </div>
-<div class="flex items-center gap-2 w-full sm:w-auto justify-end">
-<button class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 bg-background-dark border border-border-dark rounded-md hover:bg-slate-800 transition-colors">
-<span class="material-symbols-outlined text-[18px]">sort</span>
-                            Sort
-                        </button>
-<button class="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-300 bg-background-dark border border-border-dark rounded-md hover:bg-slate-800 transition-colors">
-<span class="material-symbols-outlined text-[18px]">view_column</span>
-                            Columns
-                        </button>
-</div>
-</div>
-<!-- Data Table -->
-<div class="bg-surface-dark border border-border-dark rounded-xl overflow-hidden shadow-sm">
-<div class="overflow-x-auto">
-<table class="w-full text-left border-collapse">
-<thead>
-<tr class="border-b border-border-dark bg-slate-800/30">
-<th class="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider w-12">
-<input class="rounded border-slate-600 bg-slate-800 text-primary focus:ring-primary focus:ring-offset-0 h-4 w-4" type="checkbox"/>
-</th>
-<th class="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Name</th>
-<th class="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Region</th>
-<th class="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Storage Usage</th>
-<th class="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Versioning</th>
-<th class="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider">Created</th>
-<th class="p-4 text-xs font-semibold text-slate-400 uppercase tracking-wider text-right">Actions</th>
+<table class="min-w-full text-left text-sm whitespace-nowrap">
+<thead class="uppercase tracking-wider border-b border-slate-200 dark:border-border-dark bg-slate-50 dark:bg-input-dark/30">
+<tr>
+<th class="px-6 py-3 font-semibold text-slate-500 dark:text-slate-400" scope="col">Name</th>
+<th class="px-6 py-3 font-semibold text-slate-500 dark:text-slate-400" scope="col">Last Modified</th>
+<th class="px-6 py-3 font-semibold text-slate-500 dark:text-slate-400" scope="col">Size</th>
+<th class="px-6 py-3 font-semibold text-slate-500 dark:text-slate-400" scope="col">Type</th>
+<th class="px-6 py-3 text-right font-semibold text-slate-500 dark:text-slate-400" scope="col">Actions</th>
 </tr>
 </thead>
-<tbody class="divide-y divide-border-dark text-sm">
-<!-- Row 1 -->
-<tr class="group hover:bg-slate-800/30 transition-colors">
-<td class="p-4">
-<input class="rounded border-slate-600 bg-slate-800 text-primary focus:ring-primary focus:ring-offset-0 h-4 w-4" type="checkbox"/>
-</td>
-<td class="p-4">
-<div class="flex items-center gap-3">
-<span class="p-2 rounded bg-slate-800 text-primary">
-<span class="material-symbols-outlined text-[20px]">folder</span>
-</span>
-<div>
-<a class="font-medium text-white hover:text-primary transition-colors block" href="#">assets-prod-v1</a>
-<span class="text-xs text-slate-500">public-read</span>
-</div>
-</div>
-</td>
-<td class="p-4 text-slate-300">us-east-1</td>
-<td class="p-4">
-<div class="flex flex-col gap-1 w-32">
-<span class="text-slate-200 font-medium">24.5 TB</span>
-<div class="w-full bg-slate-700 rounded-full h-1">
-<div class="bg-emerald-500 h-1 rounded-full" style="width: 75%"></div>
-</div>
-</div>
-</td>
-<td class="p-4">
-<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
-<span class="material-symbols-outlined text-[14px]">check_circle</span>
-                                            Enabled
-                                        </span>
-</td>
-<td class="p-4 text-slate-400">Oct 24, 2023</td>
-<td class="p-4 text-right">
-<button class="text-slate-500 hover:text-white transition-colors p-1 rounded hover:bg-slate-700">
-<span class="material-symbols-outlined text-[20px]">more_vert</span>
-</button>
+<tbody class="divide-y divide-slate-200 dark:divide-border-dark">
+<tr class="hover:bg-slate-50 dark:hover:bg-input-dark/20 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400">folder</span>
+                                        images/
+                                    </td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">Oct 24, 2023 09:30 AM</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">-</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">Folder</td>
+<td class="px-6 py-4 text-right">
+<span class="material-symbols-outlined text-slate-400 text-[20px] cursor-pointer">more_vert</span>
 </td>
 </tr>
-<!-- Row 2 -->
-<tr class="group hover:bg-slate-800/30 transition-colors">
-<td class="p-4">
-<input class="rounded border-slate-600 bg-slate-800 text-primary focus:ring-primary focus:ring-offset-0 h-4 w-4" type="checkbox"/>
-</td>
-<td class="p-4">
-<div class="flex items-center gap-3">
-<span class="p-2 rounded bg-slate-800 text-primary">
-<span class="material-symbols-outlined text-[20px]">folder</span>
-</span>
-<div>
-<a class="font-medium text-white hover:text-primary transition-colors block" href="#">logs-archive-2023</a>
-<span class="text-xs text-slate-500">private</span>
-</div>
-</div>
-</td>
-<td class="p-4 text-slate-300">eu-west-2</td>
-<td class="p-4">
-<div class="flex flex-col gap-1 w-32">
-<span class="text-slate-200 font-medium">8.2 TB</span>
-<div class="w-full bg-slate-700 rounded-full h-1">
-<div class="bg-blue-500 h-1 rounded-full" style="width: 30%"></div>
-</div>
-</div>
-</td>
-<td class="p-4">
-<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-slate-700 text-slate-300 border border-slate-600">
-<span class="material-symbols-outlined text-[14px]">remove_circle</span>
-                                            Suspended
-                                        </span>
-</td>
-<td class="p-4 text-slate-400">Sep 10, 2023</td>
-<td class="p-4 text-right">
-<button class="text-slate-500 hover:text-white transition-colors p-1 rounded hover:bg-slate-700">
-<span class="material-symbols-outlined text-[20px]">more_vert</span>
-</button>
+<tr class="hover:bg-slate-50 dark:hover:bg-input-dark/20 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400">description</span>
+                                        document-v1.pdf
+                                    </td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">Oct 23, 2023 11:15 AM</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">2.4 MB</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">PDF</td>
+<td class="px-6 py-4 text-right">
+<span class="material-symbols-outlined text-slate-400 text-[20px] cursor-pointer">more_vert</span>
 </td>
 </tr>
-<!-- Row 3 -->
-<tr class="group hover:bg-slate-800/30 transition-colors">
-<td class="p-4">
-<input class="rounded border-slate-600 bg-slate-800 text-primary focus:ring-primary focus:ring-offset-0 h-4 w-4" type="checkbox"/>
-</td>
-<td class="p-4">
-<div class="flex items-center gap-3">
-<span class="p-2 rounded bg-slate-800 text-primary">
-<span class="material-symbols-outlined text-[20px]">folder</span>
-</span>
-<div>
-<a class="font-medium text-white hover:text-primary transition-colors block" href="#">backup-daily-db</a>
-<span class="text-xs text-slate-500">private</span>
-</div>
-</div>
-</td>
-<td class="p-4 text-slate-300">us-east-1</td>
-<td class="p-4">
-<div class="flex flex-col gap-1 w-32">
-<span class="text-slate-200 font-medium">1.1 TB</span>
-<div class="w-full bg-slate-700 rounded-full h-1">
-<div class="bg-blue-500 h-1 rounded-full" style="width: 10%"></div>
-</div>
-</div>
-</td>
-<td class="p-4">
-<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-green-500/10 text-green-400 border border-green-500/20">
-<span class="material-symbols-outlined text-[14px]">check_circle</span>
-                                            Enabled
-                                        </span>
-</td>
-<td class="p-4 text-slate-400">Nov 12, 2023</td>
-<td class="p-4 text-right">
-<button class="text-slate-500 hover:text-white transition-colors p-1 rounded hover:bg-slate-700">
-<span class="material-symbols-outlined text-[20px]">more_vert</span>
-</button>
-</td>
-</tr>
-<!-- Row 4 -->
-<tr class="group hover:bg-slate-800/30 transition-colors">
-<td class="p-4">
-<input class="rounded border-slate-600 bg-slate-800 text-primary focus:ring-primary focus:ring-offset-0 h-4 w-4" type="checkbox"/>
-</td>
-<td class="p-4">
-<div class="flex items-center gap-3">
-<span class="p-2 rounded bg-slate-800 text-primary">
-<span class="material-symbols-outlined text-[20px]">folder</span>
-</span>
-<div>
-<a class="font-medium text-white hover:text-primary transition-colors block" href="#">static-site-assets</a>
-<span class="text-xs text-slate-500">public-read</span>
-</div>
-</div>
-</td>
-<td class="p-4 text-slate-300">us-west-2</td>
-<td class="p-4">
-<div class="flex flex-col gap-1 w-32">
-<span class="text-slate-200 font-medium">450 GB</span>
-<div class="w-full bg-slate-700 rounded-full h-1">
-<div class="bg-blue-500 h-1 rounded-full" style="width: 5%"></div>
-</div>
-</div>
-</td>
-<td class="p-4">
-<span class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-slate-700 text-slate-300 border border-slate-600">
-<span class="material-symbols-outlined text-[14px]">remove_circle</span>
-                                            Suspended
-                                        </span>
-</td>
-<td class="p-4 text-slate-400">Dec 01, 2023</td>
-<td class="p-4 text-right">
-<button class="text-slate-500 hover:text-white transition-colors p-1 rounded hover:bg-slate-700">
-<span class="material-symbols-outlined text-[20px]">more_vert</span>
-</button>
+<tr class="hover:bg-slate-50 dark:hover:bg-input-dark/20 transition-colors">
+<td class="px-6 py-4 font-medium text-slate-900 dark:text-white flex items-center gap-3">
+<span class="material-symbols-outlined text-slate-400">image</span>
+                                        banner-hero.jpg
+                                    </td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">Oct 22, 2023 04:20 PM</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">1.8 MB</td>
+<td class="px-6 py-4 text-slate-500 dark:text-slate-400">JPG</td>
+<td class="px-6 py-4 text-right">
+<span class="material-symbols-outlined text-slate-400 text-[20px] cursor-pointer">more_vert</span>
 </td>
 </tr>
 </tbody>
 </table>
 </div>
-<!-- Table Footer / Pagination -->
-<div class="border-t border-border-dark px-4 py-3 flex items-center justify-between bg-slate-800/20">
-<p class="text-xs text-slate-500">
-                            Showing <span class="font-medium text-white">1</span> to <span class="font-medium text-white">4</span> of <span class="font-medium text-white">12</span> results
-                        </p>
-<div class="flex gap-2">
-<button class="px-3 py-1 text-xs font-medium rounded border border-border-dark text-slate-400 bg-transparent hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed">
-                                Previous
-                            </button>
-<button class="px-3 py-1 text-xs font-medium rounded border border-border-dark text-slate-400 bg-transparent hover:bg-slate-800">
-                                Next
-                            </button>
-</div>
-</div>
-</div>
-</div>
-<!-- Bottom spacing -->
-<div class="h-12"></div>
 </div>
 </main>
+</div>
+</div>
+<div class="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" id="modal-overlay">
+<div class="w-full max-w-xl transform overflow-hidden rounded-xl bg-white dark:bg-card-dark text-left align-middle shadow-xl transition-all border border-slate-200 dark:border-border-dark flex flex-col max-h-[90vh]">
+<div class="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-border-dark">
+<div>
+<h3 class="text-lg font-semibold leading-6 text-slate-900 dark:text-white">Upload Objects</h3>
+<p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Upload files to <span class="font-mono text-slate-700 dark:text-slate-300">production-assets/</span></p>
+</div>
+<button class="text-slate-400 hover:text-slate-500 dark:hover:text-slate-300 transition-colors">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="px-6 py-6 overflow-y-auto custom-scrollbar">
+<div class="relative mb-8 rounded-lg border-2 border-dashed border-slate-300 dark:border-border-dark hover:border-primary/50 hover:bg-slate-50 dark:hover:bg-input-dark/50 transition-colors p-8 flex flex-col items-center justify-center text-center cursor-pointer">
+<div class="p-3 bg-primary/10 rounded-full mb-3 text-primary">
+<span class="material-symbols-outlined text-3xl">cloud_upload</span>
+</div>
+<h4 class="text-sm font-semibold text-slate-900 dark:text-white">Click to upload or drag and drop</h4>
+<p class="text-xs text-slate-500 dark:text-slate-400 mt-1">SVG, PNG, JPG or GIF (max. 5GB)</p>
+</div>
+<div class="space-y-4">
+<h4 class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3">Upload Queue (2)</h4>
+<div class="bg-slate-50 dark:bg-input-dark/40 rounded-lg p-3 border border-slate-100 dark:border-border-dark">
+<div class="flex items-center gap-3 mb-2">
+<div class="size-10 rounded bg-indigo-500/10 flex items-center justify-center text-indigo-500">
+<span class="material-symbols-outlined text-[20px]">image</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<p class="text-sm font-medium text-slate-900 dark:text-white truncate">image-01.png</p>
+<span class="text-xs font-medium text-green-500 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                                        Done
+                                    </span>
+</div>
+<div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+<span>2.4 MB</span>
+<span>100%</span>
+</div>
+</div>
+<button class="text-slate-400 hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined text-[18px]">delete</span>
+</button>
+</div>
+<div class="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-green-500 w-full"></div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-input-dark/40 rounded-lg p-3 border border-slate-100 dark:border-border-dark">
+<div class="flex items-center gap-3 mb-2">
+<div class="size-10 rounded bg-orange-500/10 flex items-center justify-center text-orange-500">
+<span class="material-symbols-outlined text-[20px]">folder_zip</span>
+</div>
+<div class="flex-1 min-w-0">
+<div class="flex items-center justify-between mb-0.5">
+<p class="text-sm font-medium text-slate-900 dark:text-white truncate">backup.zip</p>
+<span class="text-xs font-medium text-primary flex items-center gap-1">
+<span class="animate-pulse w-1.5 h-1.5 rounded-full bg-primary"></span>
+                                        Uploading...
+                                    </span>
+</div>
+<div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+<span>450 MB / 1.2 GB</span>
+<span>45%</span>
+</div>
+</div>
+<button class="text-slate-400 hover:text-red-400 transition-colors">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<div class="h-1.5 w-full bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+<div class="h-full bg-primary w-[45%] relative overflow-hidden">
+<div class="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite] -translate-x-full" style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-slate-50 dark:bg-background-dark/50 px-6 py-4 flex items-center justify-between border-t border-slate-100 dark:border-border-dark">
+<button class="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors">
+                    Cancel All
+                </button>
+<div class="flex gap-3">
+<button class="inline-flex w-full justify-center rounded-lg bg-white dark:bg-input-dark px-4 py-2 text-sm font-semibold text-slate-900 dark:text-slate-300 shadow-sm ring-1 ring-inset ring-slate-300 dark:ring-border-dark hover:bg-slate-50 dark:hover:bg-slate-700 sm:w-auto transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="">
+                        Close
+                    </button>
+<button class="inline-flex w-full justify-center rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-hover sm:w-auto transition-colors">
+                        Hide to Background
+                    </button>
+</div>
+</div>
+</div>
+</div>
+<style>
+        @keyframes shimmer {
+            100% {
+                transform: translateX(100%);
+            }
+        }
+    </style>
+
 </body></html>

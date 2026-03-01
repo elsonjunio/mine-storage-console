@@ -47,6 +47,7 @@ export const API = {
   OBJECTS: '/objects',
   OBJECTS_COPY: '/objects/copy',
   OBJECTS_MOVE: '/objects/move',
+  OBJECTS_UPLOAD: '/objects/upload',
   OBJECTS_UPLOAD_URL: '/objects/upload-url',
   OBJECTS_PRESIGNED_DOWNLOAD: '/objects/presigned-download',
   OBJECTS_VERSIONS: '/objects/versions',

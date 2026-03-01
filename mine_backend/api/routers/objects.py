@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from mine_backend.core.security import extract_sts_credentials
 from mine_backend.config import get_s3_client
 from mine_backend.services.object_service import ObjectService
@@ -102,6 +102,23 @@ def move_object(
         dest_bucket,
         dest_key,
     )
+    return success_response(response)
+
+
+@router.post(
+    '/upload',
+    response_model=StandardResponse[ObjectMessageReponse],
+)
+async def upload_object(
+    bucket: str,
+    key: str,
+    content_type: str | None = None,
+    file: UploadFile = File(...),
+    service: ObjectService = Depends(get_object_service),
+):
+    data = await file.read()
+    ct = content_type or file.content_type or 'application/octet-stream'
+    response = await service.upload_object_proxy(bucket, key, data, ct)
     return success_response(response)
 
 

@@ -14,6 +14,18 @@ export const routes: Routes = [
       import('./features/demo/demo').then(m => m.Demo),
   },
   {
+    path: 'buckets',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/buckets/buckets').then(m => m.BucketsComponent),
+  },
+  {
+    path: 'buckets/:name',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/bucket-detail/bucket-detail').then(m => m.BucketDetailComponent),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () =>
