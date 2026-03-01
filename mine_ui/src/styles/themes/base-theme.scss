@@ -1,6 +1,14 @@
 @theme {
   --color-mint-500: oklch(0.72 0.11 178);
 
+  /* ── Semantic adaptive tokens (light defaults, overridden in dark mode) ── */
+  --color-adaptive-bg:          #f6f7f8;
+  --color-adaptive-surface:     #ffffff;
+  --color-adaptive-sidebar:     #f1f5f9;
+  --color-adaptive-sidebar-top: #e2e8f0;
+  --color-adaptive-border:      #e2e8f0;
+  --color-adaptive-text:        #0f172a;
+
   /* ── Global design-system tokens ── */
   --color-primary:           #13a4ec;
   --color-primary-dark:      #0e7ab0;

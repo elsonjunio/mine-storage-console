@@ -20,6 +20,32 @@
       "BUILD": "Build de Desarrollo"
     }
   },
+  "DASHBOARD": {
+    "WELCOME": "Bienvenido de nuevo, {{name}}",
+    "SUBTITLE_ADMIN": "Aquí hay un resumen de tu sistema de almacenamiento.",
+    "SUBTITLE_USER": "Aquí hay un resumen de tus buckets.",
+    "STATS": {
+      "BUCKETS": "Buckets",
+      "USERS": "Usuarios",
+      "LOADING": "Cargando..."
+    },
+    "ACTIONS": {
+      "TITLE": "Acciones Rápidas",
+      "BUCKETS_DESC": "Navega y gestiona tus buckets",
+      "OBJECTS_DESC": "Navega por objetos en los buckets",
+      "USERS_DESC": "Gestiona los usuarios del sistema",
+      "GROUPS_DESC": "Gestiona grupos de usuarios",
+      "POLICIES_DESC": "Configura políticas de acceso",
+      "CREDENTIALS_DESC": "Gestiona credenciales de acceso",
+      "NOTIFICATIONS_DESC": "Configura notificaciones de eventos"
+    },
+    "RECENT": {
+      "TITLE": "Buckets Recientes",
+      "NAME": "Nombre",
+      "CREATED": "Creado el",
+      "EMPTY": "No se encontraron buckets."
+    }
+  },
   "TOPBAR": {
     "SEARCH_PLACEHOLDER": "Buscar recursos...",
     "USER_MENU": {
@@ -28,6 +54,8 @@
       "THEME_SYSTEM": "Sistema",
       "THEME_DARK": "Oscuro",
       "LANGUAGE": "Idioma",
+      "ROLE_ADMIN": "Admin",
+      "ROLE_USER": "Usuario",
       "LOGOUT": "Cerrar sesión"
     }
   }

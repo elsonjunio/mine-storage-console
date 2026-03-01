@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from mine_backend.api.dependencies.auth import get_current_user
+from mine_backend.api.dependencies.authorization import is_admin
 
 router = APIRouter()
 
@@ -15,5 +16,6 @@ async def me(user: dict = Depends(get_current_user)):
             'roles': user.get('realm_access', {}).get('roles', []),
             'client_roles': user.get('resource_access', {}),
             'raw_claims': user,
+            'is_admin': is_admin(user),
         },
     }

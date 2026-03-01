@@ -80,7 +80,18 @@ interface ThemeOption {
 
               <!-- User Info -->
               <div class="px-4 py-3 border-b border-adaptive-border">
-                <p class="text-sm font-semibold" [class]="titleClass">{{ userService.displayName() }}</p>
+                <div class="flex items-center gap-2">
+                  <p class="text-sm font-semibold" [class]="titleClass">{{ userService.displayName() }}</p>
+                  @if (userService.isAdmin()) {
+                    <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary">
+                      {{ 'TOPBAR.USER_MENU.ROLE_ADMIN' | translate }}
+                    </span>
+                  } @else {
+                    <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-500/15 text-slate-500">
+                      {{ 'TOPBAR.USER_MENU.ROLE_USER' | translate }}
+                    </span>
+                  }
+                </div>
                 <p class="text-xs text-slate-500 mt-0.5">{{ userService.email() }}</p>
               </div>
 

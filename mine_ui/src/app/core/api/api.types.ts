@@ -26,6 +26,7 @@ export interface MeResponse {
   email: string;
   roles: string[];
   client_roles: Record<string, string[]>;
+  is_admin: boolean;
   raw_claims: {
     email: string;
     fname: string;

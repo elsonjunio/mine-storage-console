@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 
 import { TOKEN_STORAGE_KEY, API } from '../api/api.config';
 import { ConfigService } from '../api/config.service';
+import { UserService } from './user.service';
 
 const PKCE_VERIFIER_KEY = 'pkce_code_verifier';
 
@@ -27,6 +28,7 @@ async function generatePkcePair(): Promise<{ verifier: string; challenge: string
 export class AuthService {
   private config = inject(ConfigService);
   private router = inject(Router);
+  private userService = inject(UserService);
 
   isAuthenticated(): boolean {
     return !!localStorage.getItem(TOKEN_STORAGE_KEY);
@@ -74,6 +76,7 @@ export class AuthService {
     const data = await res.json();
     const mineToken: string = data['data']?.['access_token'];
     localStorage.setItem(TOKEN_STORAGE_KEY, mineToken);
+    await this.userService.loadMe();
 
     await this.router.navigateByUrl('/');
   }

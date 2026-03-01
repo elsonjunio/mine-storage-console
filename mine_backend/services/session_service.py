@@ -13,6 +13,8 @@ def issue_internal_token(user_payload: dict, sts_data: dict):
     custom_roles = get_claim(user_payload, settings.OPENID_ROLE_CLAIM)
 
     payload = {
+        "email": user_payload.get("email"),
+        "fname": user_payload.get("name"),
         "sub": user_payload.get("sub"),
         "username": user_payload.get("preferred_username"),
         "roles": user_payload.get("realm_access", {}).get("roles", []),

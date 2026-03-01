@@ -1,6 +1,6 @@
-import { Injectable } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 
-type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = 'light' | 'dark' | 'system';
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
@@ -8,19 +8,26 @@ export class ThemeService {
   private readonly storageKey = 'theme';
   private currentTheme: 'light' | 'dark' = 'light';
 
+  readonly mode = signal<ThemeMode>('system');
+
   init() {
     const savedTheme = localStorage.getItem(this.storageKey) as ThemeMode | null;
 
     if (savedTheme === 'dark') {
       this.enableDark();
+      this.mode.set('dark');
     } else if (savedTheme === 'light') {
       this.disableDark();
+      this.mode.set('light');
     } else {
       this.applySystemPreference();
+      this.mode.set('system');
     }
   }
 
   setTheme(mode: ThemeMode) {
+    this.mode.set(mode);
+
     if (mode === 'dark') {
       localStorage.setItem(this.storageKey, 'dark');
       this.enableDark();
@@ -49,9 +56,6 @@ export class ThemeService {
 
   private applySystemPreference() {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-
-    console.log(prefersDark);
-
     if (prefersDark) {
       this.enableDark();
     } else {

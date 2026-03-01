@@ -16,6 +16,8 @@ export class UserService {
 
   readonly email = computed(() => this.user()?.email ?? '');
 
+  readonly isAdmin = computed(() => this.user()?.is_admin ?? false);
+
   readonly initials = computed(() => {
     const name = this.displayName();
     const parts = name.trim().split(/\s+/);

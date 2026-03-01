@@ -9,6 +9,37 @@
   @apply fixed inset-0 z-50;
 }
 
+/* ── Adaptive token overrides for dark mode ── */
+[data-theme="dark"] {
+  --color-adaptive-bg:          #101c22;
+  --color-adaptive-surface:     #182830;
+  --color-adaptive-sidebar:     #101c22;
+  --color-adaptive-sidebar-top: #091318;
+  --color-adaptive-border:      #2a3b47;
+  --color-adaptive-text:        #f1f5f9;
+}
+
+/* Material Symbols filled variant */
+.material-symbols-outlined.filled {
+  font-variation-settings: 'FILL' 1;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #101c22;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3b47;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3a4f5e;
+}
+
 
 
 

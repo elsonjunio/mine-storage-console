@@ -10,7 +10,9 @@ import {
   UiCardComponent,
   UiTableComponent,
   UiStatCardComponent,
+  UiBreadcrumbComponent,
 } from '../../shared/components';
+import type { BreadcrumbItem } from '../../shared/components';
 import { SelectOption } from '../../shared/components/ui-select/ui-select.component';
 
 @Component({
@@ -26,6 +28,7 @@ import { SelectOption } from '../../shared/components/ui-select/ui-select.compon
     UiCardComponent,
     UiTableComponent,
     UiStatCardComponent,
+    UiBreadcrumbComponent,
   ],
   templateUrl: './demo.html',
   styleUrl: './demo.scss',
@@ -38,6 +41,23 @@ export class Demo {
   toggleOn = true;
   toggleOff = false;
   loadingButton = true;
+
+  breadcrumbSimple: BreadcrumbItem[] = [
+    { label: 'Home', href: '/' },
+    { label: 'Operational', href: '/buckets' },
+    { label: 'Buckets' },
+  ];
+
+  breadcrumbDeep: BreadcrumbItem[] = [
+    { label: 'Home', href: '/' },
+    { label: 'IAM', href: '/users' },
+    { label: 'Users', href: '/users' },
+    { label: 'jane.smith' },
+  ];
+
+  breadcrumbSingle: BreadcrumbItem[] = [
+    { label: 'Dashboard' },
+  ];
 
   selectOptions: SelectOption[] = [
     { value: 'minio', label: 'MinIO' },

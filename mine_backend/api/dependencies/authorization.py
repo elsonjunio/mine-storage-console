@@ -5,7 +5,6 @@ from mine_backend.services.authorization_service import AuthorizationService
 
 
 def require_role(required_role: str):
-
     async def role_dependency(user: dict = Depends(get_current_user)):
         return AuthorizationService.require_role(
             user,
@@ -13,3 +12,7 @@ def require_role(required_role: str):
         )
 
     return role_dependency
+
+
+def is_admin(user: dict):
+    return AuthorizationService.is_admin(user)

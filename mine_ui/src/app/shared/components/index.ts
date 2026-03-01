@@ -8,3 +8,7 @@ export { UiProgressBarComponent } from './ui-progress-bar/ui-progress-bar.compon
 export { UiCardComponent } from './ui-card/ui-card.component';
 export { UiTableComponent } from './ui-table/ui-table.component';
 export { UiStatCardComponent } from './ui-state-card/ui-state-card.component';
+export { SidebarComponent } from './sidebar/sidebar.component';
+export { TopbarComponent } from './topbar/topbar.component';
+export { UiBreadcrumbComponent } from './ui-breadcrumb/ui-breadcrumb.component';
+export type { BreadcrumbItem } from './ui-breadcrumb/ui-breadcrumb.component';
