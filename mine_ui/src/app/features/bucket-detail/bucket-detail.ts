@@ -1208,7 +1208,7 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
                 {{ 'BUCKET_DETAIL.UPLOAD.INTERMEDIATE_LABEL' | translate }}
               </label>
               <div class="flex items-center rounded-lg border overflow-hidden" [class]="intermediateInputWrapClass">
-                <span class="px-3 py-2 text-xs font-mono shrink-0 border-r" [class]="intermediatePathPrefixClass">
+                <span class="px-3 py-2 text-xs font-mono border-r truncate max-w-[40%] shrink-0" [class]="intermediatePathPrefixClass" [title]="currentPrefix() || '/'">
                   {{ currentPrefix() || '/' }}
                 </span>
                 <input
@@ -1216,7 +1216,7 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
                   [placeholder]="'BUCKET_DETAIL.UPLOAD.INTERMEDIATE_PLACEHOLDER' | translate"
                   (input)="uploadIntermediatePath.set($any($event.target).value)"
                   [value]="uploadIntermediatePath()"
-                  class="flex-1 bg-transparent outline-none text-sm font-mono px-3 py-2"
+                  class="flex-1 min-w-0 bg-transparent outline-none text-sm font-mono px-3 py-2"
                   [class]="subtleClass"
                 />
               </div>
