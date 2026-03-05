@@ -35,6 +35,8 @@ import type {
   BucketPolicyResponse,
   UpdateBucketPolicyRequest,
   UpdateBucketLifecycleRequest,
+  LifecycleValidationResponse,
+  PolicyValidationResponse,
   ListObjectsResponse,
   ObjectMessageReponse,
   GenerateUploadUrlResponse,
@@ -44,6 +46,8 @@ import type {
   DeleteObjectVersionResponse,
   RestoreObjectVersionResponse,
   ObjectMetadataResponse,
+  UpdateObjectMetadataRequest,
+  UpdateObjectMetadataResponse,
   ObjectTagsResponse,
   UpdateObjectTagsRequest,
   UpdateObjectTagsResponse,
@@ -290,6 +294,16 @@ export class ApiService {
     );
   }
 
+  validateBucketPolicy(
+    name: string,
+    body: UpdateBucketPolicyRequest,
+  ): Observable<StandardResponse<PolicyValidationResponse>> {
+    return this.http.post<StandardResponse<PolicyValidationResponse>>(
+      this.url(API.BUCKET_POLICY_VALIDATE(name)),
+      body,
+    );
+  }
+
   getBucketLifecycle(name: string): Observable<StandardResponse<unknown>> {
     return this.http.get<StandardResponse<unknown>>(this.url(API.BUCKET_LIFECYCLE(name)));
   }
@@ -303,6 +317,16 @@ export class ApiService {
 
   deleteBucketLifecycle(name: string): Observable<StandardResponse<unknown>> {
     return this.http.delete<StandardResponse<unknown>>(this.url(API.BUCKET_LIFECYCLE(name)));
+  }
+
+  validateBucketLifecycle(
+    name: string,
+    body: UpdateBucketLifecycleRequest,
+  ): Observable<StandardResponse<LifecycleValidationResponse>> {
+    return this.http.post<StandardResponse<LifecycleValidationResponse>>(
+      this.url(API.BUCKET_LIFECYCLE_VALIDATE(name)),
+      body,
+    );
   }
 
   getBucketEvents(name: string): Observable<StandardResponse<unknown>> {
@@ -464,6 +488,15 @@ export class ApiService {
     return this.http.get<StandardResponse<ObjectMetadataResponse>>(
       this.url(API.OBJECTS_METADATA),
       { params },
+    );
+  }
+
+  updateObjectMetadata(
+    body: UpdateObjectMetadataRequest,
+  ): Observable<StandardResponse<UpdateObjectMetadataResponse>> {
+    return this.http.put<StandardResponse<UpdateObjectMetadataResponse>>(
+      this.url(API.OBJECTS_METADATA),
+      body,
     );
   }
 

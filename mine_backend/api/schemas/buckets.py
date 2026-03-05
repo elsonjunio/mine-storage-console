@@ -48,3 +48,8 @@ class UpdateBucketPolicyRequest(BaseModel):
 
 class UpdateBucketLifecycleRequest(BaseModel):
     lifecycle: Dict[str, Any]
+
+
+class LifecycleValidationResponse(BaseModel):
+    valid: bool
+    errors: List[str]

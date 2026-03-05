@@ -1,5 +1,6 @@
 import { Component, computed, inject, OnInit, signal, ElementRef, viewChild } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { KeyValuePipe } from '@angular/common';
 import { TranslatePipe } from '@ngx-translate/core';
 import { HttpEventType } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
@@ -11,11 +12,62 @@ import { UserService } from '../../core/auth/user.service';
 import type {
   ObjectItemResponse,
   ObjectMetadataResponse,
+  ObjectVersionItemResponse,
   BucketResponse,
+  BucketVersionResponse,
+  BucketQuotaGetResponse,
+  BucketUsageResponse,
+  UpdateBucketLifecycleRequest,
+  LifecycleValidationResponse,
+  PolicyValidationResponse,
 } from '../../core/api/api.types';
 
 type Tab = 'objects' | 'management' | 'security' | 'events';
 type UploadStatus = 'pending' | 'uploading' | 'done' | 'error';
+
+const POLICY_EXAMPLES: Record<string, object> = {
+  read_only: {
+    Version: '2012-10-17',
+    Statement: [{ Sid: 'PublicReadGetObject', Effect: 'Allow', Principal: '*', Action: ['s3:GetObject'], Resource: ['arn:aws:s3:::BUCKET_NAME/*'] }],
+  },
+  write_only: {
+    Version: '2012-10-17',
+    Statement: [{ Sid: 'WriteOnlyLogBucket', Effect: 'Allow', Principal: { Service: 'logging.s3.amazonaws.com' }, Action: ['s3:PutObject'], Resource: ['arn:aws:s3:::BUCKET_NAME/logs/*'] }],
+  },
+  deny_unencrypted: {
+    Version: '2012-10-17',
+    Statement: [{ Sid: 'DenyUnencryptedUploads', Effect: 'Deny', Principal: '*', Action: 's3:PutObject', Resource: ['arn:aws:s3:::BUCKET_NAME/*'], Condition: { StringNotEquals: { 's3:x-amz-server-side-encryption': 'AES256' } } }],
+  },
+  ip_restrict: {
+    Version: '2012-10-17',
+    Statement: [{ Sid: 'RestrictByIP', Effect: 'Deny', Principal: '*', Action: 's3:*', Resource: ['arn:aws:s3:::BUCKET_NAME', 'arn:aws:s3:::BUCKET_NAME/*'], Condition: { NotIpAddress: { 'aws:SourceIp': '192.168.1.0/24' } } }],
+  },
+};
+
+interface EventRow {
+  id: string;
+  destType: 'queue' | 'topic' | 'lambda';
+  eventTypes: string[];
+  destinationArn: string;
+  prefix: string;
+  suffix: string;
+  rawJson: string;
+}
+
+const EVENT_TYPES = [
+  's3:ObjectCreated:*',
+  's3:ObjectCreated:Put',
+  's3:ObjectCreated:Post',
+  's3:ObjectCreated:Copy',
+  's3:ObjectCreated:CompleteMultipartUpload',
+  's3:ObjectRemoved:*',
+  's3:ObjectRemoved:Delete',
+  's3:ObjectRemoved:DeleteMarkerCreated',
+  's3:ObjectRestore:*',
+  's3:ObjectRestore:Completed',
+  's3:Replication:*',
+  's3:LifecycleExpiration:*',
+] as const;
 
 interface UploadQueueItem {
   id: string;
@@ -35,7 +87,7 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
 @Component({
   selector: 'app-bucket-detail',
   standalone: true,
-  imports: [RouterLink, TranslatePipe],
+  imports: [RouterLink, TranslatePipe, KeyValuePipe],
   template: `
     <div class="flex min-h-full">
 
@@ -103,7 +155,7 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
         <div class="px-6 mt-6 border-b flex gap-8 shrink-0" [class]="borderClass">
           @for (tab of tabs; track tab.id) {
             <button
-              (click)="activeTab.set(tab.id)"
+              (click)="switchTab(tab.id)"
               class="pb-3 border-b-2 font-medium text-sm flex items-center gap-2 transition-colors"
               [class]="activeTab() === tab.id ? activeTabClass : inactiveTabClass"
             >
@@ -247,8 +299,559 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
 
         }
 
+        <!-- ── Management Tab ────────────────────────────────────── -->
+        @if (activeTab() === 'management') {
+          <div class="px-6 py-6 md:px-10 overflow-y-auto flex-1">
+            @if (mgmtLoading()) {
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto w-full">
+                @for (i of [1, 2, 3]; track i) {
+                  <div [class]="i === 3 ? 'lg:col-span-2' : ''">
+                    <div class="h-52 rounded-xl animate-pulse" [class]="skeletonClass"></div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10 max-w-7xl mx-auto w-full">
+
+                <!-- Versioning Card -->
+                <div [class]="mgmtCardClass">
+                  <div class="flex items-start justify-between mb-4">
+                    <div class="flex gap-3">
+                      <div class="mt-1 p-2 rounded-lg bg-primary/10 text-primary h-fit">
+                        <span class="material-symbols-outlined">history</span>
+                      </div>
+                      <div>
+                        <h3 class="text-base font-semibold" [class]="titleClass">{{ 'BUCKET_DETAIL.MANAGEMENT.VERSIONING_TITLE' | translate }}</h3>
+                        <p class="mt-1 text-sm max-w-sm" [class]="mutedClass">{{ 'BUCKET_DETAIL.MANAGEMENT.VERSIONING_DESC' | translate }}</p>
+                      </div>
+                    </div>
+                    @if (mgmtVersioning()?.toLowerCase() === 'enabled') {
+                      <span class="inline-flex items-center rounded-md bg-green-400/10 px-2 py-1 text-xs font-medium text-green-400 ring-1 ring-inset ring-green-400/20 shrink-0">{{ 'BUCKET_DETAIL.MANAGEMENT.VERSIONING_ENABLED' | translate }}</span>
+                    } @else if (mgmtVersioning()?.toLowerCase() === 'suspended') {
+                      <span class="inline-flex items-center rounded-md bg-amber-400/10 px-2 py-1 text-xs font-medium text-amber-400 ring-1 ring-inset ring-amber-400/20 shrink-0">{{ 'BUCKET_DETAIL.MANAGEMENT.VERSIONING_SUSPENDED' | translate }}</span>
+                    } @else {
+                      <span class="inline-flex items-center rounded-md bg-slate-400/10 px-2 py-1 text-xs font-medium text-slate-400 ring-1 ring-inset ring-slate-400/20 shrink-0">{{ 'BUCKET_DETAIL.MANAGEMENT.VERSIONING_DISABLED' | translate }}</span>
+                    }
+                  </div>
+                  <div class="mt-6 flex items-center justify-between border-t pt-6" [class]="borderClass">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        class="sr-only peer"
+                        [checked]="mgmtVersioningToggle()"
+                        (change)="mgmtVersioningToggle.set($any($event.target).checked)"
+                        [disabled]="mgmtVersioningSaving()"
+                      />
+                      <div class="w-11 h-6 rounded-full peer peer-focus:ring-2 peer-focus:ring-primary/50 bg-slate-300 dark:bg-slate-700 peer-checked:bg-primary relative after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:border-gray-300 after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+                      <span class="ml-3 text-sm font-medium" [class]="subtleClass">{{ 'BUCKET_DETAIL.MANAGEMENT.VERSIONING_STATUS' | translate }}</span>
+                    </label>
+                    <button
+                      (click)="saveVersioning()"
+                      [disabled]="mgmtVersioningSaving()"
+                      class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary hover:bg-primary-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      @if (mgmtVersioningSaving()) {
+                        <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                      }
+                      {{ 'BUCKET_DETAIL.MANAGEMENT.SAVE' | translate }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Quota Card -->
+                <div [class]="mgmtCardClass">
+                  <div class="flex items-start justify-between mb-4">
+                    <div class="flex gap-3">
+                      <div class="mt-1 p-2 rounded-lg bg-primary/10 text-primary h-fit">
+                        <span class="material-symbols-outlined">pie_chart</span>
+                      </div>
+                      <div>
+                        <h3 class="text-base font-semibold" [class]="titleClass">{{ 'BUCKET_DETAIL.MANAGEMENT.QUOTA_TITLE' | translate }}</h3>
+                        <p class="mt-1 text-sm max-w-sm" [class]="mutedClass">{{ 'BUCKET_DETAIL.MANAGEMENT.QUOTA_DESC' | translate }}</p>
+                      </div>
+                    </div>
+                  </div>
+                  @if (usage() && mgmtQuota()?.quota_bytes) {
+                    <div class="mt-2 mb-6">
+                      <div class="flex justify-between text-xs font-medium mb-2" [class]="mutedClass">
+                        <span>{{ 'BUCKET_DETAIL.MANAGEMENT.QUOTA_USAGE' | translate }}: {{ formatSize(usage()!.size_bytes) }}</span>
+                        <span>{{ 'BUCKET_DETAIL.MANAGEMENT.QUOTA_LIMIT' | translate }}: {{ formatSize(mgmtQuota()!.quota_bytes) }}</span>
+                      </div>
+                      <div class="w-full rounded-full h-2.5 overflow-hidden" [class]="mgmtProgressTrackClass">
+                        <div class="bg-primary h-2.5 rounded-full transition-all duration-500" [style.width.%]="mgmtUsagePct()"></div>
+                      </div>
+                      <p class="mt-2 text-xs text-right" [class]="mutedClass">{{ mgmtUsagePct() }}% {{ 'BUCKET_DETAIL.MANAGEMENT.QUOTA_USED' | translate }}</p>
+                    </div>
+                  }
+                  <div class="flex items-center justify-between border-t pt-6 gap-4" [class]="borderClass">
+                    <div class="relative flex-1">
+                      <input
+                        type="number"
+                        min="1"
+                        [class]="mgmtQuotaInputClass"
+                        [value]="mgmtQuotaInput()"
+                        (input)="mgmtQuotaInput.set($any($event.target).value)"
+                        placeholder="1024"
+                      />
+                      <div class="absolute inset-y-0 right-0 flex items-center">
+                        <select [class]="mgmtQuotaUnitClass" (change)="mgmtQuotaUnit.set($any($event.target).value)">
+                          <option value="GB" [selected]="mgmtQuotaUnit() === 'GB'">GB</option>
+                          <option value="TB" [selected]="mgmtQuotaUnit() === 'TB'">TB</option>
+                          <option value="PB" [selected]="mgmtQuotaUnit() === 'PB'">PB</option>
+                        </select>
+                      </div>
+                    </div>
+                    <button
+                      (click)="saveQuota()"
+                      [disabled]="mgmtQuotaSaving() || !mgmtQuotaInput()"
+                      class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary hover:bg-primary-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                    >
+                      @if (mgmtQuotaSaving()) {
+                        <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                      }
+                      {{ 'BUCKET_DETAIL.MANAGEMENT.UPDATE' | translate }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Lifecycle Card -->
+                <div class="lg:col-span-2" [class]="mgmtCardClass">
+                  <div class="flex flex-col sm:flex-row sm:items-start justify-between mb-6 gap-4">
+                    <div class="flex gap-3">
+                      <div class="mt-1 p-2 rounded-lg bg-primary/10 text-primary h-fit">
+                        <span class="material-symbols-outlined">schedule</span>
+                      </div>
+                      <div>
+                        <h3 class="text-base font-semibold" [class]="titleClass">{{ 'BUCKET_DETAIL.MANAGEMENT.LIFECYCLE_TITLE' | translate }}</h3>
+                        <p class="mt-1 text-sm max-w-2xl" [class]="mutedClass">{{ 'BUCKET_DETAIL.MANAGEMENT.LIFECYCLE_DESC' | translate }}</p>
+                      </div>
+                    </div>
+                    <button (click)="validateLifecycle()" [disabled]="mgmtValidating()" class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors border shrink-0 disabled:opacity-40 disabled:cursor-not-allowed" [class]="ghostBtnClass">
+                      @if (mgmtValidating()) {
+                        <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                      } @else {
+                        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                      }
+                      {{ 'BUCKET_DETAIL.MANAGEMENT.VALIDATE_JSON' | translate }}
+                    </button>
+                  </div>
+
+                  <!-- Code editor -->
+                  <div class="rounded-lg overflow-hidden border" [class]="borderClass">
+                    <div [class]="mgmtEditorHeaderClass">
+                      <span class="text-xs font-mono" [class]="mutedClass">lifecycle-config.json</span>
+                      <button (click)="copyToClipboard(mgmtLifecycleJson())" class="transition-colors" [class]="mutedClass + ' hover:text-primary'" title="Copy">
+                        <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                      </button>
+                    </div>
+                    <textarea
+                      [class]="mgmtEditorBodyClass"
+                      [value]="mgmtLifecycleJson()"
+                      (input)="mgmtLifecycleJson.set($any($event.target).value); mgmtLifecycleErrors.set([]); mgmtLifecycleValid.set(false)"
+                      [placeholder]="'BUCKET_DETAIL.MANAGEMENT.LIFECYCLE_PLACEHOLDER' | translate"
+                      spellcheck="false"
+                    ></textarea>
+                  </div>
+                  @if (mgmtLifecycleErrors().length > 0) {
+                    <div class="mt-2 space-y-1">
+                      @for (err of mgmtLifecycleErrors(); track err) {
+                        <p class="text-xs text-red-400 flex items-start gap-1">
+                          <span class="material-symbols-outlined text-[14px] mt-px shrink-0">error</span>
+                          {{ err }}
+                        </p>
+                      }
+                    </div>
+                  } @else if (mgmtLifecycleValid()) {
+                    <p class="mt-2 text-xs text-green-400 flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                      {{ 'BUCKET_DETAIL.MANAGEMENT.LIFECYCLE_VALID' | translate }}
+                    </p>
+                  }
+                  <div class="mt-6 flex justify-end">
+                    <button
+                      (click)="saveLifecycle()"
+                      [disabled]="mgmtLifecycleSaving() || mgmtLifecycleErrors().length > 0"
+                      class="flex items-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium bg-primary hover:bg-primary-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      @if (mgmtLifecycleSaving()) {
+                        <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                      }
+                      {{ 'BUCKET_DETAIL.MANAGEMENT.SAVE_CONFIG' | translate }}
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ── Security tab ────────────────────────────────────── -->
+        @if (activeTab() === 'security') {
+          <div class="px-6 py-6 overflow-y-auto flex-1">
+          <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <!-- Left: info card -->
+            <div class="lg:col-span-4">
+              <div class="rounded-xl border p-6 lg:sticky lg:top-6" [class]="mgmtCardClass">
+                <div class="flex gap-3 mb-4">
+                  <div class="mt-1 p-2 rounded-lg bg-primary/10 text-primary h-fit">
+                    <span class="material-symbols-outlined">policy</span>
+                  </div>
+                  <div>
+                    <h3 class="text-base font-semibold" [class]="titleClass">{{ 'BUCKET_DETAIL.SECURITY.POLICY_TITLE' | translate }}</h3>
+                    <p class="mt-1 text-sm" [class]="mutedClass">{{ 'BUCKET_DETAIL.SECURITY.POLICY_DESC' | translate }}</p>
+                  </div>
+                </div>
+                <p class="text-sm leading-relaxed mb-4" [class]="mutedClass">{{ 'BUCKET_DETAIL.SECURITY.POLICY_BODY' | translate }}</p>
+                <ul class="text-sm space-y-2 list-disc pl-4 mb-6" [class]="mutedClass">
+                  <li>{{ 'BUCKET_DETAIL.SECURITY.BULLET_CONTROL' | translate }}</li>
+                  <li>{{ 'BUCKET_DETAIL.SECURITY.BULLET_PERMISSIONS' | translate }}</li>
+                  <li>{{ 'BUCKET_DETAIL.SECURITY.BULLET_IP' | translate }}</li>
+                  <li>{{ 'BUCKET_DETAIL.SECURITY.BULLET_SSL' | translate }}</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Right: policy editor -->
+            <div class="lg:col-span-8">
+              @if (securityLoading()) {
+                <div class="flex items-center justify-center h-64">
+                  <span class="material-symbols-outlined animate-spin text-primary text-[32px]">progress_activity</span>
+                </div>
+              } @else {
+                <div class="rounded-xl border p-6 flex flex-col" [class]="mgmtCardClass">
+
+                  <!-- Top bar -->
+                  <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                    <select
+                      [class]="securitySelectClass"
+                      (change)="applyPolicyExample($any($event.target).value); $any($event.target).selectedIndex = 0"
+                    >
+                      <option value="" disabled selected>{{ 'BUCKET_DETAIL.SECURITY.EXAMPLE_PLACEHOLDER' | translate }}</option>
+                      <option value="read_only">{{ 'BUCKET_DETAIL.SECURITY.EXAMPLE_READ_ONLY' | translate }}</option>
+                      <option value="write_only">{{ 'BUCKET_DETAIL.SECURITY.EXAMPLE_WRITE_ONLY' | translate }}</option>
+                      <option value="deny_unencrypted">{{ 'BUCKET_DETAIL.SECURITY.EXAMPLE_DENY_UNENCRYPTED' | translate }}</option>
+                      <option value="ip_restrict">{{ 'BUCKET_DETAIL.SECURITY.EXAMPLE_IP_RESTRICT' | translate }}</option>
+                    </select>
+                    <button
+                      (click)="validatePolicy()"
+                      [disabled]="securityPolicyValidating()"
+                      class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors border shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+                      [class]="ghostBtnClass"
+                    >
+                      @if (securityPolicyValidating()) {
+                        <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                      } @else {
+                        <span class="material-symbols-outlined text-[18px]">check_circle</span>
+                      }
+                      {{ 'BUCKET_DETAIL.SECURITY.VALIDATE_POLICY' | translate }}
+                    </button>
+                  </div>
+
+                  <!-- Code editor -->
+                  <div class="rounded-lg overflow-hidden border" [class]="borderClass">
+                    <div [class]="mgmtEditorHeaderClass">
+                      <span class="text-xs font-mono" [class]="mutedClass">bucket-policy.json</span>
+                      <button (click)="copyToClipboard(securityPolicyJson())" class="transition-colors" [class]="mutedClass + ' hover:text-primary'" title="Copy">
+                        <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                      </button>
+                    </div>
+                    <textarea
+                      [class]="securityEditorBodyClass"
+                      [value]="securityPolicyJson()"
+                      (input)="securityPolicyJson.set($any($event.target).value); securityPolicyErrors.set([]); securityPolicyValid.set(false)"
+                      [placeholder]="'BUCKET_DETAIL.SECURITY.POLICY_PLACEHOLDER' | translate"
+                      spellcheck="false"
+                    ></textarea>
+                  </div>
+
+                  <!-- Validation feedback -->
+                  @if (securityPolicyErrors().length > 0) {
+                    <div class="mt-2 space-y-1">
+                      @for (err of securityPolicyErrors(); track err) {
+                        <p class="text-xs text-red-400 flex items-start gap-1">
+                          <span class="material-symbols-outlined text-[14px] mt-px shrink-0">error</span>
+                          {{ err }}
+                        </p>
+                      }
+                    </div>
+                  } @else if (securityPolicyValid()) {
+                    <p class="mt-2 text-xs text-green-400 flex items-center gap-1">
+                      <span class="material-symbols-outlined text-[14px]">check_circle</span>
+                      {{ 'BUCKET_DETAIL.SECURITY.POLICY_VALID' | translate }}
+                    </p>
+                  }
+
+                  <!-- Footer actions -->
+                  <div class="mt-6 flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t" [class]="borderClass">
+                    <button
+                      (click)="deletePolicy()"
+                      [disabled]="securityPolicyDeleting()"
+                      class="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-500 border border-red-200 dark:border-red-900/50 hover:border-red-300 dark:hover:border-red-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      @if (securityPolicyDeleting()) {
+                        <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                      } @else {
+                        <span class="material-symbols-outlined text-[18px]">delete_forever</span>
+                      }
+                      {{ 'BUCKET_DETAIL.SECURITY.DELETE_POLICY' | translate }}
+                    </button>
+                    <button
+                      (click)="savePolicy()"
+                      [disabled]="securityPolicySaving() || securityPolicyErrors().length > 0"
+                      class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium bg-primary hover:bg-primary-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      @if (securityPolicySaving()) {
+                        <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                      }
+                      {{ 'BUCKET_DETAIL.SECURITY.SAVE_POLICY' | translate }}
+                    </button>
+                  </div>
+
+                </div>
+              }
+            </div>
+
+          </div>
+          </div>
+        }
+
+        <!-- ── Events tab ─────────────────────────────────────── -->
+        @if (activeTab() === 'events') {
+          <div class="px-6 py-6 overflow-y-auto flex-1">
+          <div class="rounded-xl border overflow-hidden shadow-sm" [class]="mgmtCardClass" style="padding:0">
+
+            <!-- Toolbar -->
+            <div class="p-5 border-b flex flex-col sm:flex-row justify-between items-center gap-4" [class]="borderClass">
+              <div class="relative w-full sm:w-96">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span class="material-symbols-outlined text-[18px]" [class]="mutedClass">search</span>
+                </div>
+                <input
+                  type="text"
+                  class="block w-full pl-10 pr-3 py-2 rounded-lg text-sm transition-all outline-none"
+                  [class]="filterInputClass"
+                  [value]="eventsFilter()"
+                  (input)="eventsFilter.set($any($event.target).value)"
+                  [placeholder]="'BUCKET_DETAIL.EVENTS.FILTER_PLACEHOLDER' | translate"
+                />
+              </div>
+              <button
+                (click)="openAddEventModal()"
+                class="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold bg-primary hover:bg-primary-hover text-white transition-all shadow-lg shadow-primary/20"
+              >
+                <span class="material-symbols-outlined text-xl">add</span>
+                {{ 'BUCKET_DETAIL.EVENTS.CONFIGURE_NEW' | translate }}
+              </button>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse">
+                <thead>
+                  <tr [class]="eventsTableHeaderClass">
+                    <th class="px-6 py-4 w-12"></th>
+                    <th class="px-6 py-4">{{ 'BUCKET_DETAIL.EVENTS.TABLE_NAME' | translate }}</th>
+                    <th class="px-6 py-4">{{ 'BUCKET_DETAIL.EVENTS.TABLE_EVENTS' | translate }}</th>
+                    <th class="px-6 py-4">{{ 'BUCKET_DETAIL.EVENTS.TABLE_DESTINATION' | translate }}</th>
+                    <th class="px-6 py-4 text-right">{{ 'BUCKET_DETAIL.EVENTS.TABLE_ACTIONS' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (eventsLoading()) {
+                    <tr>
+                      <td colspan="5" class="px-6 py-16 text-center">
+                        <span class="material-symbols-outlined animate-spin text-primary text-[32px]">progress_activity</span>
+                      </td>
+                    </tr>
+                  } @else if (eventsRowsFiltered().length === 0) {
+                    <tr>
+                      <td colspan="5" class="px-6 py-16 text-center text-sm" [class]="mutedClass">
+                        {{ eventsFilter() ? ('BUCKET_DETAIL.EVENTS.TABLE_NO_RESULTS' | translate) : ('BUCKET_DETAIL.EVENTS.TABLE_EMPTY' | translate) }}
+                      </td>
+                    </tr>
+                  } @else {
+                    @for (row of eventsRowsFiltered(); track row.id) {
+                      <tr [class]="eventsTableRowClass" (click)="toggleEventRow(row.id)">
+                        <td class="px-6 py-4 text-center">
+                          <span class="material-symbols-outlined text-[20px] transition-transform" [class]="mutedClass" [style.transform]="expandedEventId() === row.id ? 'rotate(90deg)' : 'rotate(0deg)'">keyboard_arrow_right</span>
+                        </td>
+                        <td class="px-6 py-4">
+                          <div class="flex flex-col">
+                            <span class="font-semibold text-sm" [class]="titleClass">{{ row.id }}</span>
+                            <span class="text-xs font-mono mt-0.5" [class]="mutedClass">{{ row.destType }}</span>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4">
+                          <div class="flex flex-wrap gap-1.5">
+                            @for (evt of row.eventTypes; track evt) {
+                              <span [class]="getEventTypeBadgeClass(evt)">{{ evt }}</span>
+                            }
+                          </div>
+                        </td>
+                        <td class="px-6 py-4">
+                          <div class="flex items-center gap-2" [class]="mutedClass">
+                            <span class="material-symbols-outlined text-[18px]">{{ getEventDestIcon(row.destType) }}</span>
+                            <span class="truncate max-w-[220px] text-sm" [title]="row.destinationArn">{{ row.destinationArn }}</span>
+                          </div>
+                        </td>
+                        <td class="px-6 py-4 text-right" (click)="$event.stopPropagation()">
+                          <button (click)="openEditEventModal(row)" class="p-1 rounded transition-colors mr-1" [class]="mutedClass + ' hover:text-primary'" [title]="'BUCKET_DETAIL.EVENTS.EDIT_CONFIG' | translate">
+                            <span class="material-symbols-outlined text-[18px]">edit</span>
+                          </button>
+                          <button (click)="deleteEvent(row)" [disabled]="eventsDeletingId() === row.id" class="p-1 rounded transition-colors text-red-400 hover:text-red-300 disabled:opacity-40" [title]="'BUCKET_DETAIL.EVENTS.DELETE_EVENT' | translate">
+                            @if (eventsDeletingId() === row.id) {
+                              <span class="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                            } @else {
+                              <span class="material-symbols-outlined text-[18px]">delete</span>
+                            }
+                          </button>
+                        </td>
+                      </tr>
+                      @if (expandedEventId() === row.id) {
+                        <tr [class]="eventsExpandedRowClass">
+                          <td colspan="5" class="px-6 py-5 pl-20">
+                            <div class="flex gap-6">
+                              <div class="flex-1 min-w-0">
+                                <p class="text-xs uppercase font-bold mb-2 flex items-center gap-1" [class]="mutedClass">
+                                  <span class="material-symbols-outlined text-[14px]">code</span>
+                                  {{ 'BUCKET_DETAIL.EVENTS.CONFIG_JSON' | translate }}
+                                </p>
+                                <pre [class]="eventsCodeClass">{{ row.rawJson }}</pre>
+                              </div>
+                              <div class="w-52 flex flex-col gap-3 pt-5 shrink-0" (click)="$event.stopPropagation()">
+                                <button (click)="openEditEventModal(row)" class="w-full py-2 px-4 rounded-lg border text-xs font-medium transition-colors flex items-center justify-between" [class]="ghostBtnClass">
+                                  {{ 'BUCKET_DETAIL.EVENTS.EDIT_CONFIG' | translate }}
+                                  <span class="material-symbols-outlined text-[14px]">edit</span>
+                                </button>
+                                <button (click)="deleteEvent(row)" [disabled]="eventsDeletingId() === row.id" class="w-full py-2 px-4 rounded-lg border border-red-900/40 text-red-400 hover:text-red-300 hover:bg-red-900/20 text-xs font-medium transition-colors flex items-center justify-between disabled:opacity-40">
+                                  {{ 'BUCKET_DETAIL.EVENTS.DELETE_EVENT' | translate }}
+                                  @if (eventsDeletingId() === row.id) {
+                                    <span class="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+                                  } @else {
+                                    <span class="material-symbols-outlined text-[14px]">delete</span>
+                                  }
+                                </button>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Footer -->
+            @if (!eventsLoading() && eventsRowsFiltered().length > 0) {
+              <div class="px-6 py-4 border-t flex items-center justify-between" [class]="borderClass">
+                <p class="text-sm" [class]="mutedClass">
+                  {{ 'BUCKET_DETAIL.EVENTS.SHOWING' | translate }}
+                  <span class="font-medium" [class]="titleClass">{{ eventsRowsFiltered().length }}</span>
+                  {{ 'BUCKET_DETAIL.EVENTS.OF' | translate }}
+                  <span class="font-medium" [class]="titleClass">{{ eventsRows().length }}</span>
+                  {{ 'BUCKET_DETAIL.EVENTS.EVENTS_COUNT' | translate }}
+                </p>
+              </div>
+            }
+
+          </div>
+
+          <!-- Add/Edit Event Modal -->
+          @if (showEventModal()) {
+            <div class="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/50 p-4" (click)="closeEventModal()">
+              <div [class]="uploadModalClass" (click)="$event.stopPropagation()">
+
+                <!-- Modal header -->
+                <div class="px-6 py-4 border-b flex items-center justify-between shrink-0" [class]="borderClass">
+                  <h2 class="text-base font-semibold" [class]="titleClass">
+                    {{ (eventModalMode() === 'add' ? 'BUCKET_DETAIL.EVENTS.MODAL_ADD_TITLE' : 'BUCKET_DETAIL.EVENTS.MODAL_EDIT_TITLE') | translate }}
+                  </h2>
+                  <button (click)="closeEventModal()" class="p-1 rounded transition-colors" [class]="closeButtonClass">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                  </button>
+                </div>
+
+                <!-- Modal body -->
+                <div class="px-6 py-5 overflow-y-auto flex-1 space-y-4">
+
+                  <!-- Name / ID -->
+                  <div>
+                    <label class="block text-xs font-semibold mb-1.5" [class]="mutedClass">{{ 'BUCKET_DETAIL.EVENTS.MODAL_NAME' | translate }}</label>
+                    <input type="text" [class]="eventModalInputClass" [value]="eventModalName()" (input)="eventModalName.set($any($event.target).value)" placeholder="my-event-rule" />
+                  </div>
+
+                  <!-- Destination Type -->
+                  <div>
+                    <label class="block text-xs font-semibold mb-1.5" [class]="mutedClass">{{ 'BUCKET_DETAIL.EVENTS.MODAL_DEST_TYPE' | translate }}</label>
+                    <select [class]="securitySelectClass + ' w-full'" (change)="eventModalDestType.set($any($event.target).value)">
+                      <option value="queue" [selected]="eventModalDestType() === 'queue'">{{ 'BUCKET_DETAIL.EVENTS.DEST_QUEUE' | translate }}</option>
+                      <option value="topic" [selected]="eventModalDestType() === 'topic'">{{ 'BUCKET_DETAIL.EVENTS.DEST_TOPIC' | translate }}</option>
+                      <option value="lambda" [selected]="eventModalDestType() === 'lambda'">{{ 'BUCKET_DETAIL.EVENTS.DEST_LAMBDA' | translate }}</option>
+                    </select>
+                  </div>
+
+                  <!-- Destination ARN -->
+                  <div>
+                    <label class="block text-xs font-semibold mb-1.5" [class]="mutedClass">{{ 'BUCKET_DETAIL.EVENTS.MODAL_DEST_ARN' | translate }}</label>
+                    <input type="text" [class]="eventModalInputClass" [value]="eventModalDestArn()" (input)="eventModalDestArn.set($any($event.target).value)" placeholder="arn:minio:sqs::..." />
+                  </div>
+
+                  <!-- Event Types -->
+                  <div>
+                    <label class="block text-xs font-semibold mb-2" [class]="mutedClass">{{ 'BUCKET_DETAIL.EVENTS.MODAL_EVENTS' | translate }}</label>
+                    <div class="space-y-1.5 max-h-44 overflow-y-auto pr-1">
+                      @for (type of eventTypes; track type) {
+                        <label class="flex items-center gap-2.5 text-xs cursor-pointer py-0.5">
+                          <input type="checkbox" class="rounded border-border-dark text-primary focus:ring-primary" [checked]="isEventTypeSelected(type)" (change)="toggleEventType(type)" />
+                          <span class="font-mono" [class]="titleClass">{{ type }}</span>
+                        </label>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Filters -->
+                  <div class="grid grid-cols-2 gap-3">
+                    <div>
+                      <label class="block text-xs font-semibold mb-1.5" [class]="mutedClass">{{ 'BUCKET_DETAIL.EVENTS.MODAL_PREFIX' | translate }}</label>
+                      <input type="text" [class]="eventModalInputClass" [value]="eventModalPrefix()" (input)="eventModalPrefix.set($any($event.target).value)" placeholder="logs/" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold mb-1.5" [class]="mutedClass">{{ 'BUCKET_DETAIL.EVENTS.MODAL_SUFFIX' | translate }}</label>
+                      <input type="text" [class]="eventModalInputClass" [value]="eventModalSuffix()" (input)="eventModalSuffix.set($any($event.target).value)" placeholder=".log" />
+                    </div>
+                  </div>
+
+                </div>
+
+                <!-- Modal footer -->
+                <div class="px-6 py-4 border-t flex justify-end gap-3 shrink-0" [class]="borderClass">
+                  <button (click)="closeEventModal()" class="px-4 py-2 rounded-lg text-sm font-medium transition-colors" [class]="ghostBtnClass">
+                    {{ 'BUCKET_DETAIL.EVENTS.MODAL_CANCEL' | translate }}
+                  </button>
+                  <button
+                    (click)="saveEvent()"
+                    [disabled]="eventModalSaving() || !eventModalDestArn().trim() || eventModalEventTypes().length === 0"
+                    class="flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium bg-primary hover:bg-primary-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    @if (eventModalSaving()) {
+                      <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                    }
+                    {{ 'BUCKET_DETAIL.EVENTS.MODAL_SAVE' | translate }}
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          }
+
+          </div>
+        }
+
         <!-- ── Other tabs placeholder ─────────────────────────── -->
-        @if (activeTab() !== 'objects') {
+        @if (activeTab() !== 'objects' && activeTab() !== 'management' && activeTab() !== 'security' && activeTab() !== 'events') {
           <div class="flex-1 flex items-center justify-center">
             <div class="text-center">
               <span class="material-symbols-outlined text-[48px] mb-3 block" [class]="mutedClass">construction</span>
@@ -290,7 +893,7 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
             </div>
 
             <!-- Action buttons -->
-            <div class="grid grid-cols-5 gap-2 mb-6">
+            <div class="grid grid-cols-3 gap-2 mb-6">
               <button [class]="drawerActionClass" (click)="downloadSelected()" [disabled]="drawerDownloading()">
                 <span class="material-symbols-outlined text-[20px]" [class]="drawerDownloading() ? 'animate-spin' : ''">
                   {{ drawerDownloading() ? 'progress_activity' : 'download' }}
@@ -300,6 +903,10 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
               <button [class]="drawerActionClass" (click)="copyKey()">
                 <span class="material-symbols-outlined text-[20px]">content_copy</span>
                 <span class="text-[10px] mt-0.5" [class]="mutedClass">{{ 'BUCKET_DETAIL.DRAWER.COPY_KEY' | translate }}</span>
+              </button>
+              <button [class]="drawerActionClass" (click)="openVersionsModal()">
+                <span class="material-symbols-outlined text-[20px]">history</span>
+                <span class="text-[10px] mt-0.5" [class]="mutedClass">{{ 'BUCKET_DETAIL.DRAWER.VERSIONS' | translate }}</span>
               </button>
               <button [class]="drawerActionDeleteClass" (click)="showDeleteConfirm.set(true)" [disabled]="drawerDeleting()">
                 <span class="material-symbols-outlined text-[20px]">delete</span>
@@ -360,19 +967,195 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
                 </div>
               </div>
 
+              <!-- Custom Metadata -->
+              <div class="space-y-3 pt-4 border-t" [class]="borderClass">
+                <div class="flex items-center justify-between">
+                  <h4 class="text-[10px] font-semibold uppercase tracking-wider" [class]="mutedClass">
+                    {{ 'BUCKET_DETAIL.DRAWER.METADATA' | translate }}
+                    @if ((drawerMetadata()?.metadata | keyvalue)?.length && !drawerMetadataEditing()) {
+                      <span class="ml-1 px-1 rounded text-[9px]" [class]="tagBadgeClass">{{ (drawerMetadata()!.metadata | keyvalue)!.length }}</span>
+                    }
+                  </h4>
+                  @if (!drawerMetadataEditing()) {
+                    <button
+                      (click)="startEditMetadata()"
+                      class="text-[10px] font-medium transition-colors hover:text-primary flex items-center gap-0.5"
+                      [class]="mutedClass"
+                    >
+                      <span class="material-symbols-outlined text-[12px]">edit</span>
+                      {{ 'BUCKET_DETAIL.DRAWER.TAGS_EDIT' | translate }}
+                    </button>
+                  }
+                </div>
+
+                @if (drawerMetadataEditing()) {
+                  <!-- Edit mode -->
+                  <div class="space-y-2">
+                    @for (row of drawerMetadataLocal(); track $index; let i = $index) {
+                      <div class="flex gap-1 items-center">
+                        <input
+                          type="text"
+                          [value]="row.key"
+                          (input)="updateMetadataRow(i, 'key', $any($event.target).value)"
+                          [placeholder]="'BUCKET_DETAIL.DRAWER.TAG_KEY_PLACEHOLDER' | translate"
+                          class="flex-1 min-w-0 rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-primary"
+                          [class]="keyInputClass"
+                        />
+                        <input
+                          type="text"
+                          [value]="row.value"
+                          (input)="updateMetadataRow(i, 'value', $any($event.target).value)"
+                          [placeholder]="'BUCKET_DETAIL.DRAWER.TAG_VALUE_PLACEHOLDER' | translate"
+                          class="flex-1 min-w-0 rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-primary"
+                          [class]="keyInputClass"
+                        />
+                        <button
+                          (click)="removeMetadataRow(i)"
+                          class="shrink-0 p-1 rounded transition-colors text-red-400 hover:text-red-300"
+                        >
+                          <span class="material-symbols-outlined text-[14px]">close</span>
+                        </button>
+                      </div>
+                    }
+                    <button
+                      (click)="addMetadataRow()"
+                      class="text-[10px] font-medium flex items-center gap-1 transition-colors hover:text-primary"
+                      [class]="mutedClass"
+                    >
+                      <span class="material-symbols-outlined text-[12px]">add</span>
+                      {{ 'BUCKET_DETAIL.DRAWER.METADATA_ADD' | translate }}
+                    </button>
+                  </div>
+                  <div class="flex gap-2 pt-1">
+                    <button
+                      (click)="saveMetadata()"
+                      [disabled]="drawerMetadataSaving()"
+                      class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary hover:bg-primary-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      @if (drawerMetadataSaving()) {
+                        <span class="material-symbols-outlined text-[12px] animate-spin">progress_activity</span>
+                      }
+                      {{ 'BUCKET_DETAIL.DRAWER.TAGS_SAVE' | translate }}
+                    </button>
+                    <button
+                      (click)="cancelEditMetadata()"
+                      [disabled]="drawerMetadataSaving()"
+                      class="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-40"
+                      [class]="ghostBtnClass"
+                    >
+                      {{ 'BUCKET_DETAIL.DRAWER.TAGS_CANCEL' | translate }}
+                    </button>
+                  </div>
+                } @else {
+                  <!-- View mode -->
+                  @if (drawerMetadata()?.metadata && (drawerMetadata()!.metadata | keyvalue)!.length > 0) {
+                    <div class="space-y-1">
+                      @for (entry of drawerMetadata()!.metadata | keyvalue; track entry.key) {
+                        <div class="flex gap-2 items-start">
+                          <span class="text-[10px] font-mono font-medium shrink-0" [class]="subtleClass">{{ entry.key }}</span>
+                          <span class="text-[10px] font-mono break-all" [class]="mutedClass">{{ entry.value }}</span>
+                        </div>
+                      }
+                    </div>
+                  } @else {
+                    <p class="text-xs" [class]="mutedClass">{{ 'BUCKET_DETAIL.DRAWER.METADATA_EMPTY' | translate }}</p>
+                  }
+                }
+              </div>
+
               <!-- Tags -->
-              @if (drawerTagList().length > 0) {
-                <div class="space-y-3 pt-4 border-t" [class]="borderClass">
+              <div class="space-y-3 pt-4 border-t" [class]="borderClass">
+                <div class="flex items-center justify-between">
                   <h4 class="text-[10px] font-semibold uppercase tracking-wider" [class]="mutedClass">
                     {{ 'BUCKET_DETAIL.DRAWER.TAGS' | translate }}
-                  </h4>
-                  <div class="flex flex-wrap gap-2">
-                    @for (tag of drawerTagList(); track tag.key) {
-                      <span [class]="tagBadgeClass">{{ tag.key }}: {{ tag.value }}</span>
+                    @if (drawerTagList().length > 0 && !drawerTagsEditing()) {
+                      <span class="ml-1 px-1 rounded text-[9px]" [class]="tagBadgeClass">{{ drawerTagList().length }}</span>
                     }
-                  </div>
+                  </h4>
+                  @if (!drawerTagsEditing()) {
+                    <button
+                      (click)="startEditTags()"
+                      class="text-[10px] font-medium transition-colors hover:text-primary flex items-center gap-0.5"
+                      [class]="mutedClass"
+                    >
+                      <span class="material-symbols-outlined text-[12px]">edit</span>
+                      {{ 'BUCKET_DETAIL.DRAWER.TAGS_EDIT' | translate }}
+                    </button>
+                  }
                 </div>
-              }
+
+                @if (drawerTagsEditing()) {
+                  <!-- Edit mode -->
+                  <div class="space-y-2">
+                    @for (row of drawerTagsLocal(); track $index; let i = $index) {
+                      <div class="flex gap-1 items-center">
+                        <input
+                          type="text"
+                          [value]="row.key"
+                          (input)="updateTagRow(i, 'key', $any($event.target).value)"
+                          [placeholder]="'BUCKET_DETAIL.DRAWER.TAG_KEY_PLACEHOLDER' | translate"
+                          class="flex-1 min-w-0 rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-primary"
+                          [class]="keyInputClass"
+                        />
+                        <input
+                          type="text"
+                          [value]="row.value"
+                          (input)="updateTagRow(i, 'value', $any($event.target).value)"
+                          [placeholder]="'BUCKET_DETAIL.DRAWER.TAG_VALUE_PLACEHOLDER' | translate"
+                          class="flex-1 min-w-0 rounded px-2 py-1 text-xs font-mono focus:outline-none focus:border-primary"
+                          [class]="keyInputClass"
+                        />
+                        <button
+                          (click)="removeTagRow(i)"
+                          class="shrink-0 p-1 rounded transition-colors text-red-400 hover:text-red-300"
+                          title="Remove"
+                        >
+                          <span class="material-symbols-outlined text-[14px]">close</span>
+                        </button>
+                      </div>
+                    }
+                    <button
+                      (click)="addTagRow()"
+                      class="text-[10px] font-medium flex items-center gap-1 transition-colors hover:text-primary"
+                      [class]="mutedClass"
+                    >
+                      <span class="material-symbols-outlined text-[12px]">add</span>
+                      {{ 'BUCKET_DETAIL.DRAWER.TAGS_ADD' | translate }}
+                    </button>
+                  </div>
+                  <div class="flex gap-2 pt-1">
+                    <button
+                      (click)="saveTags()"
+                      [disabled]="drawerTagsSaving()"
+                      class="flex-1 flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium bg-primary hover:bg-primary-hover text-white transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      @if (drawerTagsSaving()) {
+                        <span class="material-symbols-outlined text-[12px] animate-spin">progress_activity</span>
+                      }
+                      {{ 'BUCKET_DETAIL.DRAWER.TAGS_SAVE' | translate }}
+                    </button>
+                    <button
+                      (click)="cancelEditTags()"
+                      [disabled]="drawerTagsSaving()"
+                      class="flex-1 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-40"
+                      [class]="ghostBtnClass"
+                    >
+                      {{ 'BUCKET_DETAIL.DRAWER.TAGS_CANCEL' | translate }}
+                    </button>
+                  </div>
+                } @else {
+                  <!-- View mode -->
+                  @if (drawerTagList().length > 0) {
+                    <div class="flex flex-wrap gap-2">
+                      @for (tag of drawerTagList(); track tag.key) {
+                        <span [class]="tagBadgeClass">{{ tag.key }}: {{ tag.value }}</span>
+                      }
+                    </div>
+                  } @else {
+                    <p class="text-xs" [class]="mutedClass">{{ 'BUCKET_DETAIL.DRAWER.TAGS_EMPTY' | translate }}</p>
+                  }
+                }
+              </div>
 
               <!-- Object URL -->
               <div class="mt-6 pt-4 border-t" [class]="borderClass">
@@ -583,6 +1366,147 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
               </button>
             </div>
           </div>
+
+        </div>
+      </div>
+    }
+
+    <!-- Versions Modal -->
+    @if (showVersionsModal() && selectedObject()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" (click)="closeVersionsModal()">
+        <div [class]="uploadModalClass" (click)="$event.stopPropagation()">
+
+          <!-- Header -->
+          <div class="flex items-center justify-between px-6 py-4 border-b shrink-0" [class]="borderClass">
+            <div>
+              <h3 class="text-base font-semibold" [class]="titleClass">{{ 'BUCKET_DETAIL.VERSIONS_MODAL.TITLE' | translate }}</h3>
+              <p class="mt-0.5 text-xs font-mono truncate max-w-xs" [class]="mutedClass">{{ selectedObject()!.key }}</p>
+            </div>
+            <button (click)="closeVersionsModal()" class="p-1 rounded transition-colors" [class]="closeButtonClass">
+              <span class="material-symbols-outlined text-[20px]">close</span>
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="flex-1 overflow-y-auto px-6 py-4">
+            @if (versionsModalLoading()) {
+              <div class="space-y-3">
+                @for (i of [1,2,3,4,5]; track i) {
+                  <div class="h-14 rounded-lg animate-pulse" [class]="skeletonClass"></div>
+                }
+              </div>
+            } @else if (versionsModalList().length === 0) {
+              <div class="flex flex-col items-center justify-center py-16 gap-3">
+                <span class="material-symbols-outlined text-[40px]" [class]="mutedClass">history</span>
+                <p class="text-sm" [class]="mutedClass">{{ 'BUCKET_DETAIL.VERSIONS_MODAL.EMPTY' | translate }}</p>
+              </div>
+            } @else {
+              <div class="space-y-2">
+                @for (ver of versionsModalPaged(); track ver.version_id) {
+                  @if (versionsModalConfirmDeleteId() === ver.version_id) {
+                    <!-- Inline delete confirm -->
+                    <div class="rounded-lg border border-red-900/40 bg-red-900/10 p-3 space-y-3">
+                      <p class="text-sm text-red-400">{{ 'BUCKET_DETAIL.DRAWER.VERSION_CONFIRM_DELETE' | translate }}</p>
+                      <div class="flex gap-2">
+                        <button
+                          (click)="deleteVersion(ver.version_id)"
+                          [disabled]="versionsModalDeletingId() === ver.version_id"
+                          class="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-400 border border-red-900/40 hover:border-red-700 transition-colors disabled:opacity-40"
+                        >
+                          @if (versionsModalDeletingId() === ver.version_id) {
+                            <span class="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+                          } @else {
+                            <span class="material-symbols-outlined text-[14px]">delete_forever</span>
+                          }
+                          {{ 'BUCKET_DETAIL.DRAWER.VERSION_CONFIRM_YES' | translate }}
+                        </button>
+                        <button
+                          (click)="versionsModalConfirmDeleteId.set(null)"
+                          class="flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors"
+                          [class]="ghostBtnClass"
+                        >
+                          {{ 'BUCKET_DETAIL.DRAWER.VERSION_CONFIRM_NO' | translate }}
+                        </button>
+                      </div>
+                    </div>
+                  } @else {
+                    <!-- Version row -->
+                    <div class="rounded-lg border p-3" [class]="borderClass">
+                      <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2 min-w-0">
+                          @if (ver.is_latest) {
+                            <span class="inline-flex items-center shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold bg-green-400/10 text-green-400 ring-1 ring-inset ring-green-400/20">
+                              {{ 'BUCKET_DETAIL.DRAWER.VERSION_LATEST' | translate }}
+                            </span>
+                          }
+                          <button
+                            (click)="copyToClipboard(ver.version_id)"
+                            class="font-mono text-xs truncate transition-colors hover:text-primary text-left min-w-0"
+                            [class]="subtleClass"
+                            [title]="ver.version_id"
+                          >{{ ver.version_id }}</button>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                          <button
+                            (click)="restoreVersion(ver.version_id)"
+                            [disabled]="!!versionsModalRestoringId() || !!versionsModalDeletingId() || ver.is_latest"
+                            class="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium border transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            [class]="ghostBtnClass"
+                          >
+                            @if (versionsModalRestoringId() === ver.version_id) {
+                              <span class="material-symbols-outlined text-[14px] animate-spin">progress_activity</span>
+                            } @else {
+                              <span class="material-symbols-outlined text-[14px]">restore</span>
+                            }
+                            {{ 'BUCKET_DETAIL.DRAWER.VERSION_RESTORE' | translate }}
+                          </button>
+                          <button
+                            (click)="versionsModalConfirmDeleteId.set(ver.version_id)"
+                            [disabled]="!!versionsModalDeletingId() || !!versionsModalRestoringId()"
+                            class="p-1.5 rounded-lg transition-colors text-red-400 hover:text-red-300 hover:bg-red-900/20 disabled:opacity-40"
+                            [title]="'BUCKET_DETAIL.DRAWER.VERSION_DELETE' | translate"
+                          >
+                            <span class="material-symbols-outlined text-[16px]">delete</span>
+                          </button>
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-4 mt-1.5">
+                        <span class="text-xs" [class]="mutedClass">{{ formatDateFull(ver.last_modified) }}</span>
+                        <span class="text-xs" [class]="mutedClass">{{ formatSize(ver.size) }}</span>
+                      </div>
+                    </div>
+                  }
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Footer: pagination -->
+          @if (versionsModalTotalPages() > 1) {
+            <div class="px-6 py-3 border-t flex items-center justify-between shrink-0" [class]="borderClass">
+              <button
+                (click)="versionsModalPage.set(versionsModalPage() - 1)"
+                [disabled]="versionsModalPage() === 0"
+                class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-colors disabled:opacity-30"
+                [class]="ghostBtnClass"
+              >
+                <span class="material-symbols-outlined text-[16px]">chevron_left</span>
+                {{ 'BUCKET_DETAIL.VERSIONS_MODAL.PREV' | translate }}
+              </button>
+              <span class="text-sm" [class]="mutedClass">
+                {{ versionsModalPage() + 1 }} / {{ versionsModalTotalPages() }}
+              </span>
+              <button
+                (click)="versionsModalPage.set(versionsModalPage() + 1)"
+                [disabled]="versionsModalPage() === versionsModalTotalPages() - 1"
+                class="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-colors disabled:opacity-30"
+                [class]="ghostBtnClass"
+              >
+                {{ 'BUCKET_DETAIL.VERSIONS_MODAL.NEXT' | translate }}
+                <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+              </button>
+            </div>
+          }
 
         </div>
       </div>
@@ -873,6 +1797,33 @@ export class BucketDetailComponent implements OnInit {
   readonly drawerDeleting = signal(false);
   readonly showDeleteConfirm = signal(false);
 
+  // Metadata editing
+  readonly drawerMetadataEditing = signal(false);
+  readonly drawerMetadataLocal = signal<{ key: string; value: string }[]>([]);
+  readonly drawerMetadataSaving = signal(false);
+
+  // Tags editing
+  readonly drawerTagsEditing = signal(false);
+  readonly drawerTagsLocal = signal<{ key: string; value: string }[]>([]);
+  readonly drawerTagsSaving = signal(false);
+
+  // Versions modal
+  readonly showVersionsModal = signal(false);
+  readonly versionsModalLoading = signal(false);
+  readonly versionsModalList = signal<ObjectVersionItemResponse[]>([]);
+  readonly versionsModalDeletingId = signal<string | null>(null);
+  readonly versionsModalRestoringId = signal<string | null>(null);
+  readonly versionsModalConfirmDeleteId = signal<string | null>(null);
+  readonly versionsModalPage = signal(0);
+  private readonly VERSIONS_PAGE_SIZE = 5;
+  readonly versionsModalPaged = computed(() => {
+    const start = this.versionsModalPage() * this.VERSIONS_PAGE_SIZE;
+    return this.versionsModalList().slice(start, start + this.VERSIONS_PAGE_SIZE);
+  });
+  readonly versionsModalTotalPages = computed(() =>
+    Math.ceil(this.versionsModalList().length / this.VERSIONS_PAGE_SIZE),
+  );
+
   // Move modal
   readonly showMoveModal = signal(false);
   readonly moveBuckets = signal<BucketResponse[]>([]);
@@ -903,6 +1854,66 @@ export class BucketDetailComponent implements OnInit {
     let path = this.copyDestPath().trim().replace(/^\/+/, '');
     if (path && !path.endsWith('/')) path += '/';
     return path + name;
+  });
+
+  // Management tab
+  readonly mgmtLoading = signal(false);
+  readonly mgmtVersioning = signal<string | null>(null);
+  readonly mgmtVersioningToggle = signal(false);
+  readonly mgmtVersioningSaving = signal(false);
+  readonly mgmtQuota = signal<BucketQuotaGetResponse | null>(null);
+  readonly mgmtQuotaInput = signal('');
+  readonly mgmtQuotaUnit = signal<'GB' | 'TB' | 'PB'>('GB');
+  readonly mgmtQuotaSaving = signal(false);
+  readonly mgmtLifecycleJson = signal('');
+  readonly mgmtLifecycleErrors = signal<string[]>([]);
+  readonly mgmtLifecycleValid = signal(false);
+  readonly mgmtLifecycleSaving = signal(false);
+  readonly mgmtValidating = signal(false);
+
+  // Security tab
+  readonly securityLoading = signal(false);
+  readonly securityPolicyJson = signal('');
+  readonly securityPolicyErrors = signal<string[]>([]);
+  readonly securityPolicyValid = signal(false);
+  readonly securityPolicyValidating = signal(false);
+  readonly securityPolicySaving = signal(false);
+  readonly securityPolicyDeleting = signal(false);
+
+  // Events tab
+  readonly eventTypes = EVENT_TYPES;
+  readonly eventsLoading = signal(false);
+  readonly eventsRows = signal<EventRow[]>([]);
+  readonly eventsFilter = signal('');
+  readonly expandedEventId = signal<string | null>(null);
+  readonly showEventModal = signal(false);
+  readonly eventModalMode = signal<'add' | 'edit'>('add');
+  readonly eventModalEditId = signal('');
+  readonly eventModalName = signal('');
+  readonly eventModalDestType = signal<'queue' | 'topic' | 'lambda'>('queue');
+  readonly eventModalDestArn = signal('');
+  readonly eventModalEventTypes = signal<string[]>([]);
+  readonly eventModalPrefix = signal('');
+  readonly eventModalSuffix = signal('');
+  readonly eventModalSaving = signal(false);
+  readonly eventsDeletingId = signal<string | null>(null);
+
+  readonly eventsRowsFiltered = computed(() => {
+    const q = this.eventsFilter().toLowerCase().trim();
+    if (!q) return this.eventsRows();
+    return this.eventsRows().filter(
+      (r) =>
+        r.id.toLowerCase().includes(q) ||
+        r.destinationArn.toLowerCase().includes(q) ||
+        r.eventTypes.some((t) => t.toLowerCase().includes(q)),
+    );
+  });
+
+  readonly mgmtUsagePct = computed(() => {
+    const usage = this.usage();
+    const quota = this.mgmtQuota();
+    if (!usage || !quota?.quota_bytes) return 0;
+    return Math.min(Math.round((usage.size_bytes / quota.quota_bytes) * 100), 100);
   });
 
   readonly skeletons = [1, 2, 3, 4, 5];
@@ -1007,6 +2018,8 @@ export class BucketDetailComponent implements OnInit {
     this.selectedObject.set(obj);
     this.drawerMetadata.set(null);
     this.drawerTags.set({});
+    this.drawerTagsEditing.set(false);
+    this.drawerMetadataEditing.set(false);
     this.drawerLoading.set(true);
     try {
       const [meta, tags] = await Promise.all([
@@ -1055,6 +2068,162 @@ export class BucketDetailComponent implements OnInit {
       await this.loadObjects();
     } finally {
       this.drawerDeleting.set(false);
+    }
+  }
+
+  // ── Metadata editing ─────────────────────────────────────────
+
+  startEditMetadata() {
+    const current = this.drawerMetadata()?.metadata ?? {};
+    this.drawerMetadataLocal.set(Object.entries(current).map(([key, value]) => ({ key, value })));
+    this.drawerMetadataEditing.set(true);
+  }
+
+  cancelEditMetadata() {
+    this.drawerMetadataEditing.set(false);
+  }
+
+  addMetadataRow() {
+    this.drawerMetadataLocal.update(rows => [...rows, { key: '', value: '' }]);
+  }
+
+  removeMetadataRow(index: number) {
+    this.drawerMetadataLocal.update(rows => rows.filter((_, i) => i !== index));
+  }
+
+  updateMetadataRow(index: number, field: 'key' | 'value', value: string) {
+    this.drawerMetadataLocal.update(rows =>
+      rows.map((r, i) => (i === index ? { ...r, [field]: value } : r)),
+    );
+  }
+
+  async saveMetadata() {
+    const obj = this.selectedObject();
+    if (!obj || this.drawerMetadataSaving()) return;
+    this.drawerMetadataSaving.set(true);
+    try {
+      const metadata = Object.fromEntries(
+        this.drawerMetadataLocal()
+          .filter(r => r.key.trim())
+          .map(r => [r.key.trim(), r.value]),
+      );
+      await firstValueFrom(
+        this.api.updateObjectMetadata({ bucket: this.bucketName(), key: obj.key, metadata }),
+      );
+      this.drawerMetadata.update(m => m ? { ...m, metadata } : m);
+      this.drawerMetadataEditing.set(false);
+    } finally {
+      this.drawerMetadataSaving.set(false);
+    }
+  }
+
+  // ── Tags editing ─────────────────────────────────────────────
+
+  startEditTags() {
+    this.drawerTagsLocal.set(this.drawerTagList().map(t => ({ ...t })));
+    this.drawerTagsEditing.set(true);
+  }
+
+  cancelEditTags() {
+    this.drawerTagsEditing.set(false);
+  }
+
+  addTagRow() {
+    this.drawerTagsLocal.update(rows => [...rows, { key: '', value: '' }]);
+  }
+
+  removeTagRow(index: number) {
+    this.drawerTagsLocal.update(rows => rows.filter((_, i) => i !== index));
+  }
+
+  updateTagRow(index: number, field: 'key' | 'value', value: string) {
+    this.drawerTagsLocal.update(rows =>
+      rows.map((r, i) => (i === index ? { ...r, [field]: value } : r)),
+    );
+  }
+
+  async saveTags() {
+    const obj = this.selectedObject();
+    if (!obj || this.drawerTagsSaving()) return;
+    this.drawerTagsSaving.set(true);
+    try {
+      const tags = Object.fromEntries(
+        this.drawerTagsLocal()
+          .filter(r => r.key.trim())
+          .map(r => [r.key.trim(), r.value]),
+      );
+      const res = await firstValueFrom(
+        this.api.updateObjectTags({ bucket: this.bucketName(), key: obj.key, tags }),
+      );
+      if (res.data?.tags) this.drawerTags.set(res.data.tags);
+      this.drawerTagsEditing.set(false);
+    } finally {
+      this.drawerTagsSaving.set(false);
+    }
+  }
+
+  // ── Versions modal ───────────────────────────────────────────
+
+  async openVersionsModal() {
+    const obj = this.selectedObject();
+    if (!obj) return;
+    this.versionsModalList.set([]);
+    this.versionsModalPage.set(0);
+    this.versionsModalConfirmDeleteId.set(null);
+    this.showVersionsModal.set(true);
+    this.versionsModalLoading.set(true);
+    try {
+      const res = await firstValueFrom(
+        this.api.listObjectVersions(this.bucketName(), obj.key),
+      ).catch(() => null);
+      if (res?.data?.versions) this.versionsModalList.set(res.data.versions);
+    } finally {
+      this.versionsModalLoading.set(false);
+    }
+  }
+
+  closeVersionsModal() {
+    this.showVersionsModal.set(false);
+  }
+
+  async deleteVersion(versionId: string) {
+    const obj = this.selectedObject();
+    if (!obj || this.versionsModalDeletingId()) return;
+    this.versionsModalDeletingId.set(versionId);
+    try {
+      await firstValueFrom(
+        this.api.deleteObjectVersion(this.bucketName(), obj.key, versionId),
+      );
+      this.versionsModalConfirmDeleteId.set(null);
+      const wasLatest = this.versionsModalList().find(v => v.version_id === versionId)?.is_latest;
+      this.versionsModalList.update((vs: ObjectVersionItemResponse[]) =>
+        vs.filter((v: ObjectVersionItemResponse) => v.version_id !== versionId),
+      );
+      const maxPage = Math.max(0, Math.ceil(this.versionsModalList().length / this.VERSIONS_PAGE_SIZE) - 1);
+      if (this.versionsModalPage() > maxPage) this.versionsModalPage.set(maxPage);
+      if (wasLatest) await this.selectObject(obj);
+    } finally {
+      this.versionsModalDeletingId.set(null);
+    }
+  }
+
+  async restoreVersion(versionId: string) {
+    const obj = this.selectedObject();
+    if (!obj || this.versionsModalRestoringId()) return;
+    this.versionsModalRestoringId.set(versionId);
+    try {
+      await firstValueFrom(
+        this.api.restoreObjectVersion(this.bucketName(), obj.key, versionId),
+      );
+      // Reload the version list to reflect the new latest
+      const res = await firstValueFrom(
+        this.api.listObjectVersions(this.bucketName(), obj.key),
+      ).catch(() => null);
+      if (res?.data?.versions) this.versionsModalList.set(res.data.versions);
+      this.versionsModalPage.set(0);
+      await this.selectObject(obj);
+    } finally {
+      this.versionsModalRestoringId.set(null);
     }
   }
 
@@ -1113,6 +2282,386 @@ export class BucketDetailComponent implements OnInit {
     } finally {
       this.copyLoading.set(false);
     }
+  }
+
+  switchTab(tab: Tab) {
+    this.activeTab.set(tab);
+    if (tab === 'management') this.loadManagement();
+    if (tab === 'security') this.loadSecurity();
+    if (tab === 'events') this.loadEvents();
+  }
+
+  async loadManagement() {
+    if (this.mgmtLoading()) return;
+    this.mgmtLoading.set(true);
+    const name = this.bucketName();
+    try {
+      const [versioning, quota, lifecycle] = await Promise.all([
+        firstValueFrom(this.api.getBucketVersioning(name)),
+        firstValueFrom(this.api.getBucketQuota(name)).catch(() => null),
+        firstValueFrom(this.api.getBucketLifecycle(name)).catch(() => null),
+      ]);
+
+      const v = versioning.data?.versioning ?? null;
+      this.mgmtVersioning.set(v);
+      this.mgmtVersioningToggle.set(typeof v === 'string' && v.toLowerCase() === 'enabled');
+
+      const quotaItem = (quota?.data as BucketQuotaGetResponse[] | null)?.[0] ?? null;
+      this.mgmtQuota.set(quotaItem);
+      if (quotaItem?.quota_bytes) {
+        const { value, unit } = this.bytesToQuotaInput(quotaItem.quota_bytes);
+        this.mgmtQuotaInput.set(value);
+        this.mgmtQuotaUnit.set(unit);
+      }
+
+      const lc = (lifecycle?.data as { lifecycle?: unknown } | null)?.lifecycle;
+      this.mgmtLifecycleJson.set(lc ? JSON.stringify(lc, null, 2) : '');
+      this.mgmtLifecycleErrors.set([]);
+      this.mgmtLifecycleValid.set(false);
+    } finally {
+      this.mgmtLoading.set(false);
+    }
+  }
+
+  async saveVersioning() {
+    if (this.mgmtVersioningSaving()) return;
+    this.mgmtVersioningSaving.set(true);
+    try {
+      const res = await firstValueFrom(
+        this.api.setBucketVersioning(this.bucketName(), this.mgmtVersioningToggle()),
+      );
+      this.mgmtVersioning.set(res.data?.versioning ?? null);
+    } finally {
+      this.mgmtVersioningSaving.set(false);
+    }
+  }
+
+  async saveQuota() {
+    if (this.mgmtQuotaSaving()) return;
+    const bytes = this.quotaInputToBytes(this.mgmtQuotaInput(), this.mgmtQuotaUnit());
+    if (!bytes) return;
+    this.mgmtQuotaSaving.set(true);
+    try {
+      const res = await firstValueFrom(this.api.setBucketQuota(this.bucketName(), bytes));
+      const updated = res.data as unknown as BucketQuotaGetResponse[];
+      this.mgmtQuota.set(Array.isArray(updated) ? (updated[0] ?? null) : null);
+    } finally {
+      this.mgmtQuotaSaving.set(false);
+    }
+  }
+
+  async validateLifecycle(): Promise<void> {
+    const raw = this.mgmtLifecycleJson().trim();
+    if (!raw) {
+      this.mgmtLifecycleErrors.set([]);
+      this.mgmtLifecycleValid.set(false);
+      return;
+    }
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(raw) as Record<string, unknown>;
+    } catch (e: unknown) {
+      this.mgmtLifecycleErrors.set([(e as Error).message]);
+      this.mgmtLifecycleValid.set(false);
+      return;
+    }
+    this.mgmtValidating.set(true);
+    try {
+      const res = await firstValueFrom(
+        this.api.validateBucketLifecycle(this.bucketName(), { lifecycle: parsed }),
+      );
+      const result = res.data as LifecycleValidationResponse;
+      this.mgmtLifecycleErrors.set(result.errors);
+      this.mgmtLifecycleValid.set(result.valid);
+    } finally {
+      this.mgmtValidating.set(false);
+    }
+  }
+
+  async saveLifecycle() {
+    if (this.mgmtLifecycleSaving()) return;
+    const raw = this.mgmtLifecycleJson().trim();
+    if (raw) {
+      try {
+        JSON.parse(raw);
+      } catch (e: unknown) {
+        this.mgmtLifecycleErrors.set([(e as Error).message]);
+        this.mgmtLifecycleValid.set(false);
+        return;
+      }
+    }
+    this.mgmtLifecycleSaving.set(true);
+    try {
+      if (!raw) {
+        await firstValueFrom(this.api.deleteBucketLifecycle(this.bucketName()));
+      } else {
+        const lifecycle = JSON.parse(raw) as Record<string, unknown>;
+        await firstValueFrom(
+          this.api.setBucketLifecycle(this.bucketName(), { lifecycle } as UpdateBucketLifecycleRequest),
+        );
+      }
+    } finally {
+      this.mgmtLifecycleSaving.set(false);
+    }
+  }
+
+  // ── Security tab ──────────────────────────────────────────────────────────
+
+  async loadSecurity() {
+    this.securityLoading.set(true);
+    try {
+      const res = await firstValueFrom(this.api.getBucketPolicy(this.bucketName()));
+      const policy = res.data?.policy;
+      this.securityPolicyJson.set(policy ? JSON.stringify(policy, null, 2) : '');
+      this.securityPolicyErrors.set([]);
+      this.securityPolicyValid.set(false);
+    } finally {
+      this.securityLoading.set(false);
+    }
+  }
+
+  applyPolicyExample(key: string) {
+    const template = POLICY_EXAMPLES[key];
+    if (!template) return;
+    const json = JSON.stringify(template, null, 2).replace(/BUCKET_NAME/g, this.bucketName());
+    this.securityPolicyJson.set(json);
+    this.securityPolicyErrors.set([]);
+    this.securityPolicyValid.set(false);
+  }
+
+  async validatePolicy(): Promise<void> {
+    const raw = this.securityPolicyJson().trim();
+    if (!raw) {
+      this.securityPolicyErrors.set([]);
+      this.securityPolicyValid.set(false);
+      return;
+    }
+    let parsed: Record<string, unknown>;
+    try {
+      parsed = JSON.parse(raw) as Record<string, unknown>;
+    } catch (e: unknown) {
+      this.securityPolicyErrors.set([(e as Error).message]);
+      this.securityPolicyValid.set(false);
+      return;
+    }
+    this.securityPolicyValidating.set(true);
+    try {
+      const res = await firstValueFrom(
+        this.api.validateBucketPolicy(this.bucketName(), { policy: parsed }),
+      );
+      const result = res.data as PolicyValidationResponse;
+      this.securityPolicyErrors.set(result.errors);
+      this.securityPolicyValid.set(result.valid);
+    } finally {
+      this.securityPolicyValidating.set(false);
+    }
+  }
+
+  async savePolicy() {
+    if (this.securityPolicySaving()) return;
+    const raw = this.securityPolicyJson().trim();
+    if (raw) {
+      try {
+        JSON.parse(raw);
+      } catch (e: unknown) {
+        this.securityPolicyErrors.set([(e as Error).message]);
+        this.securityPolicyValid.set(false);
+        return;
+      }
+    }
+    this.securityPolicySaving.set(true);
+    try {
+      const policy = JSON.parse(raw) as Record<string, unknown>;
+      await firstValueFrom(this.api.setBucketPolicy(this.bucketName(), { policy }));
+    } finally {
+      this.securityPolicySaving.set(false);
+    }
+  }
+
+  async deletePolicy() {
+    if (this.securityPolicyDeleting()) return;
+    this.securityPolicyDeleting.set(true);
+    try {
+      await firstValueFrom(this.api.deleteBucketPolicy(this.bucketName()));
+      this.securityPolicyJson.set('');
+      this.securityPolicyErrors.set([]);
+      this.securityPolicyValid.set(false);
+    } finally {
+      this.securityPolicyDeleting.set(false);
+    }
+  }
+
+  // ── Events tab ────────────────────────────────────────────────────────────
+
+  async loadEvents() {
+    this.eventsLoading.set(true);
+    try {
+      const res = await firstValueFrom(this.api.getBucketEvents(this.bucketName()));
+      const raw = (res.data as { events?: Record<string, unknown[]> })?.events ?? {};
+      this.eventsRows.set(this.normalizeEvents(raw));
+    } finally {
+      this.eventsLoading.set(false);
+    }
+  }
+
+  private normalizeEvents(config: Record<string, unknown[]>): EventRow[] {
+    const rows: EventRow[] = [];
+    const sections: [string, EventRow['destType'], string][] = [
+      ['QueueConfigurations', 'queue', 'QueueArn'],
+      ['TopicConfigurations', 'topic', 'TopicArn'],
+      ['LambdaFunctionConfigurations', 'lambda', 'LambdaFunctionArn'],
+    ];
+    for (const [section, destType, arnKey] of sections) {
+      const items = config[section] as Record<string, unknown>[] | undefined;
+      if (!items) continue;
+      items.forEach((item, idx) => {
+        const id = (item['Id'] as string) || `${destType}-${idx}`;
+        const destinationArn = (item[arnKey] as string) || '';
+        const eventTypes = (item['Events'] as string[]) || [];
+        const rules = ((item['Filter'] as Record<string, unknown>)?.['Key'] as Record<string, unknown>)?.['FilterRules'] as Record<string, string>[] | undefined;
+        const prefix = rules?.find((r) => r['Name'] === 'prefix')?.['Value'] ?? '';
+        const suffix = rules?.find((r) => r['Name'] === 'suffix')?.['Value'] ?? '';
+        rows.push({ id, destType, eventTypes, destinationArn, prefix, suffix, rawJson: JSON.stringify(item, null, 2) });
+      });
+    }
+    return rows;
+  }
+
+  private serializeEvents(rows: EventRow[]): Record<string, unknown[]> {
+    const config: Record<string, unknown[]> = {};
+    const sectionMap: Record<string, string> = { queue: 'QueueConfigurations', topic: 'TopicConfigurations', lambda: 'LambdaFunctionConfigurations' };
+    const arnKeyMap: Record<string, string> = { queue: 'QueueArn', topic: 'TopicArn', lambda: 'LambdaFunctionArn' };
+    for (const row of rows) {
+      const section = sectionMap[row.destType];
+      if (!config[section]) config[section] = [];
+      const filterRules: Record<string, string>[] = [];
+      if (row.prefix) filterRules.push({ Name: 'prefix', Value: row.prefix });
+      if (row.suffix) filterRules.push({ Name: 'suffix', Value: row.suffix });
+      const item: Record<string, unknown> = {
+        Id: row.id,
+        [arnKeyMap[row.destType]]: row.destinationArn,
+        Events: row.eventTypes,
+      };
+      if (filterRules.length) item['Filter'] = { Key: { FilterRules: filterRules } };
+      config[section].push(item);
+    }
+    return config;
+  }
+
+  toggleEventRow(id: string) {
+    this.expandedEventId.set(this.expandedEventId() === id ? null : id);
+  }
+
+  openAddEventModal() {
+    this.eventModalMode.set('add');
+    this.eventModalEditId.set('');
+    this.eventModalName.set('');
+    this.eventModalDestType.set('queue');
+    this.eventModalDestArn.set('');
+    this.eventModalEventTypes.set([]);
+    this.eventModalPrefix.set('');
+    this.eventModalSuffix.set('');
+    this.showEventModal.set(true);
+  }
+
+  openEditEventModal(row: EventRow) {
+    this.eventModalMode.set('edit');
+    this.eventModalEditId.set(row.id);
+    this.eventModalName.set(row.id);
+    this.eventModalDestType.set(row.destType);
+    this.eventModalDestArn.set(row.destinationArn);
+    this.eventModalEventTypes.set([...row.eventTypes]);
+    this.eventModalPrefix.set(row.prefix);
+    this.eventModalSuffix.set(row.suffix);
+    this.showEventModal.set(true);
+  }
+
+  closeEventModal() { this.showEventModal.set(false); }
+
+  toggleEventType(type: string) {
+    const current = this.eventModalEventTypes();
+    this.eventModalEventTypes.set(
+      current.includes(type) ? current.filter((t) => t !== type) : [...current, type],
+    );
+  }
+
+  isEventTypeSelected(type: string): boolean {
+    return this.eventModalEventTypes().includes(type);
+  }
+
+  async saveEvent() {
+    if (this.eventModalSaving() || !this.eventModalDestArn().trim() || this.eventModalEventTypes().length === 0) return;
+    this.eventModalSaving.set(true);
+    try {
+      let rows = [...this.eventsRows()];
+      const newRow: EventRow = {
+        id: this.eventModalName().trim() || `event-${Date.now()}`,
+        destType: this.eventModalDestType(),
+        eventTypes: this.eventModalEventTypes(),
+        destinationArn: this.eventModalDestArn().trim(),
+        prefix: this.eventModalPrefix().trim(),
+        suffix: this.eventModalSuffix().trim(),
+        rawJson: '',
+      };
+      if (this.eventModalMode() === 'edit') {
+        rows = rows.map((r) => (r.id === this.eventModalEditId() ? newRow : r));
+      } else {
+        rows.push(newRow);
+      }
+      const config = this.serializeEvents(rows);
+      await firstValueFrom(this.api.setBucketEvents(this.bucketName(), config));
+      this.eventsRows.set(this.normalizeEvents(config));
+      this.closeEventModal();
+    } finally {
+      this.eventModalSaving.set(false);
+    }
+  }
+
+  async deleteEvent(row: EventRow) {
+    if (this.eventsDeletingId()) return;
+    this.eventsDeletingId.set(row.id);
+    try {
+      const rows = this.eventsRows().filter((r) => r.id !== row.id);
+      if (rows.length === 0) {
+        await firstValueFrom(this.api.deleteBucketEvents(this.bucketName()));
+      } else {
+        const config = this.serializeEvents(rows);
+        await firstValueFrom(this.api.setBucketEvents(this.bucketName(), config));
+      }
+      this.eventsRows.set(rows);
+      if (this.expandedEventId() === row.id) this.expandedEventId.set(null);
+    } finally {
+      this.eventsDeletingId.set(null);
+    }
+  }
+
+  getEventDestIcon(destType: string): string {
+    return destType === 'queue' ? 'queue' : destType === 'topic' ? 'hub' : 'function';
+  }
+
+  getEventTypeBadgeClass(type: string): string {
+    let color: string;
+    if (type.startsWith('s3:ObjectCreated')) color = this.dark ? 'bg-blue-900/30 text-blue-200 border-blue-800' : 'bg-blue-50 text-blue-700 border-blue-200';
+    else if (type.startsWith('s3:ObjectRemoved')) color = this.dark ? 'bg-red-900/30 text-red-200 border-red-800' : 'bg-red-50 text-red-700 border-red-200';
+    else if (type.startsWith('s3:ObjectRestore')) color = this.dark ? 'bg-orange-900/30 text-orange-200 border-orange-800' : 'bg-orange-50 text-orange-700 border-orange-200';
+    else if (type.startsWith('s3:Replication')) color = this.dark ? 'bg-green-900/30 text-green-200 border-green-800' : 'bg-green-50 text-green-700 border-green-200';
+    else if (type.startsWith('s3:LifecycleExpiration')) color = this.dark ? 'bg-yellow-900/30 text-yellow-200 border-yellow-800' : 'bg-yellow-50 text-yellow-700 border-yellow-200';
+    else color = this.dark ? 'bg-purple-900/30 text-purple-200 border-purple-800' : 'bg-purple-50 text-purple-700 border-purple-200';
+    return `inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${color}`;
+  }
+
+  private bytesToQuotaInput(bytes: number): { value: string; unit: 'GB' | 'TB' | 'PB' } {
+    if (bytes >= 1024 ** 5) return { value: String(Math.round(bytes / 1024 ** 5)), unit: 'PB' };
+    if (bytes >= 1024 ** 4) return { value: String(Math.round(bytes / 1024 ** 4)), unit: 'TB' };
+    return { value: String(Math.round(bytes / 1024 ** 3)), unit: 'GB' };
+  }
+
+  private quotaInputToBytes(value: string, unit: 'GB' | 'TB' | 'PB'): number {
+    const n = parseFloat(value);
+    if (isNaN(n) || n <= 0) return 0;
+    if (unit === 'PB') return Math.round(n * 1024 ** 5);
+    if (unit === 'TB') return Math.round(n * 1024 ** 4);
+    return Math.round(n * 1024 ** 3);
   }
 
   copyKey() {
@@ -1418,6 +2967,82 @@ export class BucketDetailComponent implements OnInit {
     return this.dark
       ? 'block w-full appearance-none rounded-lg border border-border-dark bg-background-dark py-2.5 pl-3 pr-10 text-white text-sm focus:ring-2 focus:ring-primary outline-none'
       : 'block w-full appearance-none rounded-lg border border-slate-200 bg-white py-2.5 pl-3 pr-10 text-slate-900 text-sm focus:ring-2 focus:ring-primary outline-none';
+  }
+
+  get mgmtProgressTrackClass() {
+    return this.dark ? 'bg-input-dark' : 'bg-slate-100';
+  }
+
+  get mgmtCardClass() {
+    return this.dark
+      ? 'bg-surface-dark rounded-xl border border-border-dark p-6'
+      : 'bg-white rounded-xl border border-slate-200 p-6 shadow-sm';
+  }
+
+  get mgmtEditorHeaderClass() {
+    return this.dark
+      ? 'flex items-center justify-between px-4 py-2 bg-[#1a262e] border-b border-border-dark'
+      : 'flex items-center justify-between px-4 py-2 bg-slate-100 border-b border-slate-200';
+  }
+
+  get mgmtEditorBodyClass() {
+    return this.dark
+      ? 'p-4 font-mono text-sm bg-[#0d1418] text-slate-300 w-full outline-none focus:ring-2 focus:ring-inset focus:ring-primary resize-y min-h-[200px] block'
+      : 'p-4 font-mono text-sm bg-slate-50 text-slate-800 w-full outline-none focus:ring-2 focus:ring-inset focus:ring-primary resize-y min-h-[200px] block';
+  }
+
+  get securitySelectClass() {
+    return this.dark
+      ? 'rounded-lg py-2 pl-3 pr-10 text-sm text-white bg-input-dark border border-border-dark focus:ring-2 focus:ring-primary focus:border-transparent outline-none'
+      : 'rounded-lg py-2 pl-3 pr-10 text-sm text-slate-900 bg-white border border-slate-300 focus:ring-2 focus:ring-primary focus:border-transparent outline-none';
+  }
+
+  get securityEditorBodyClass() {
+    return this.dark
+      ? 'p-4 font-mono text-sm bg-[#0d1418] text-slate-300 w-full outline-none focus:ring-2 focus:ring-inset focus:ring-primary resize-y min-h-[400px] block'
+      : 'p-4 font-mono text-sm bg-slate-50 text-slate-800 w-full outline-none focus:ring-2 focus:ring-inset focus:ring-primary resize-y min-h-[400px] block';
+  }
+
+  get eventsTableHeaderClass() {
+    return this.dark
+      ? 'bg-[#0d1b22] border-b border-border-dark text-xs uppercase text-slate-400 font-semibold tracking-wider'
+      : 'bg-slate-50 border-b border-slate-200 text-xs uppercase text-slate-500 font-semibold tracking-wider';
+  }
+
+  get eventsTableRowClass() {
+    return this.dark
+      ? 'border-b border-border-dark hover:bg-white/5 transition-colors cursor-pointer'
+      : 'border-b border-slate-100 hover:bg-slate-50 transition-colors cursor-pointer';
+  }
+
+  get eventsExpandedRowClass() {
+    return this.dark
+      ? 'bg-[#0d1a20] border-l-4 border-l-primary border-b border-border-dark'
+      : 'bg-primary/5 border-l-4 border-l-primary border-b border-slate-200';
+  }
+
+  get eventsCodeClass() {
+    return this.dark
+      ? 'rounded-lg border border-border-dark p-4 font-mono text-xs text-slate-300 bg-[#0d1418] overflow-x-auto'
+      : 'rounded-lg border border-slate-200 p-4 font-mono text-xs text-slate-700 bg-slate-50 overflow-x-auto';
+  }
+
+  get eventModalInputClass() {
+    return this.dark
+      ? 'block w-full rounded-lg py-2 px-3 text-white bg-input-dark ring-1 ring-inset ring-border-dark placeholder:text-slate-500 focus:ring-2 focus:ring-inset focus:ring-primary text-sm outline-none'
+      : 'block w-full rounded-lg py-2 px-3 text-slate-900 bg-white ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary text-sm outline-none';
+  }
+
+  get mgmtQuotaInputClass() {
+    return this.dark
+      ? 'block w-full rounded-lg py-2 pl-3 pr-16 text-white bg-input-dark ring-1 ring-inset ring-border-dark placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary text-sm outline-none'
+      : 'block w-full rounded-lg py-2 pl-3 pr-16 text-slate-900 bg-slate-50 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-primary text-sm outline-none';
+  }
+
+  get mgmtQuotaUnitClass() {
+    return this.dark
+      ? 'h-full rounded-md border-0 bg-transparent py-0 pl-2 pr-7 text-slate-400 text-sm outline-none'
+      : 'h-full rounded-md border-0 bg-transparent py-0 pl-2 pr-7 text-slate-500 text-sm outline-none';
   }
 
   get filterInputClass() {

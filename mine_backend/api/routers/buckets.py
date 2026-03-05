@@ -14,9 +14,9 @@ from mine_backend.api.schemas.buckets import (
     BucketStatusResponse,
     BucketUsageResponse,
     BucketVersionResponse,
-    BucketQuotaResponse,
     UpdateBucketPolicyRequest,
     UpdateBucketLifecycleRequest,
+    LifecycleValidationResponse,
 )
 from typing import List
 
@@ -131,6 +131,19 @@ def get_usage(
     return success_response(usage)
 
 
+@router.post(
+    '/{name}/policy/validate',
+    response_model=StandardResponse[LifecycleValidationResponse],
+)
+def validate_policy(
+    name: str,
+    payload: UpdateBucketPolicyRequest,
+    service: BucketService = Depends(get_bucket_service),
+):
+    result = service.validate_policy(payload.policy)
+    return success_response(result)
+
+
 @router.get(
     '/{name}/policy',
     response_model=StandardResponse[BucketPolicyResponse],
@@ -177,6 +190,19 @@ def get_bucket_lifecycle(
 ):
     lifecycle = service.get_bucket_lifecycle(name)
     return success_response(lifecycle)
+
+
+@router.post(
+    '/{name}/lifecycle/validate',
+    response_model=StandardResponse[LifecycleValidationResponse],
+)
+def validate_lifecycle(
+    name: str,
+    payload: UpdateBucketLifecycleRequest,
+    service: BucketService = Depends(get_bucket_service),
+):
+    result = service.validate_lifecycle(payload.lifecycle)
+    return success_response(result)
 
 
 @router.put(

@@ -15,6 +15,8 @@ from mine_backend.api.schemas.objects import (
     DeleteObjectVersionResponse,
     RestoreObjectVersionResponse,
     ObjectMetadataResponse,
+    UpdateObjectMetadataRequest,
+    UpdateObjectMetadataResponse,
     UpdateObjectTagsResponse,
     ObjectTagsResponse,
     PresignedDownloadRequest,
@@ -216,6 +218,22 @@ def get_object_metadata(
     service: ObjectService = Depends(get_object_service),
 ):
     response = service.get_object_metadata(bucket, key)
+    return success_response(response)
+
+
+@router.put(
+    '/metadata',
+    response_model=StandardResponse[UpdateObjectMetadataResponse],
+)
+def update_object_metadata(
+    payload: UpdateObjectMetadataRequest,
+    service: ObjectService = Depends(get_object_service),
+):
+    response = service.update_object_metadata(
+        payload.bucket,
+        payload.key,
+        payload.metadata,
+    )
     return success_response(response)
 
 

@@ -40,7 +40,9 @@ export const API = {
   BUCKET_QUOTA: (name: string) => `/buckets/${encodeURIComponent(name)}/quota`,
   BUCKET_USAGE: (name: string) => `/buckets/${encodeURIComponent(name)}/usage`,
   BUCKET_POLICY: (name: string) => `/buckets/${encodeURIComponent(name)}/policy`,
+  BUCKET_POLICY_VALIDATE: (name: string) => `/buckets/${encodeURIComponent(name)}/policy/validate`,
   BUCKET_LIFECYCLE: (name: string) => `/buckets/${encodeURIComponent(name)}/lifecycle`,
+  BUCKET_LIFECYCLE_VALIDATE: (name: string) => `/buckets/${encodeURIComponent(name)}/lifecycle/validate`,
   BUCKET_EVENTS: (name: string) => `/buckets/${encodeURIComponent(name)}/events`,
 
   // Objects
