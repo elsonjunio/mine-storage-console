@@ -110,6 +110,18 @@ class BucketService:
             'name': name,
         }
 
+    def get_versioning(self, name: str):
+
+        if not BUCKET_REGEX.match(name):
+            raise InconsistentDataError('Invalid bucket name.')
+
+        versioning = self.s3.get_bucket_versioning_status(name)
+
+        return {
+            'bucket': name,
+            'versioning': versioning,
+        }
+
     def set_versioning(
         self,
         name: str,
@@ -231,9 +243,38 @@ class BucketService:
 
         lifecycle = self.s3.get_bucket_lifecycle(bucket)
 
+        if 'Rules' in lifecycle:
+            lifecycle = {'Rules' : lifecycle['Rules']}
+
         return {
             'bucket': bucket,
             'lifecycle': lifecycle,
+        }
+
+    def validate_policy(self, policy: dict) -> dict:
+
+        from mine_backend.services.policy_validator import (
+            validate_policy as _validate,
+        )
+
+        errors = _validate(policy)
+
+        return {
+            'valid': len(errors) == 0,
+            'errors': errors,
+        }
+
+    def validate_lifecycle(self, lifecycle: dict) -> dict:
+
+        from mine_backend.services.lifecycle_validator import (
+            validate_lifecycle as _validate,
+        )
+
+        errors = _validate(lifecycle)
+
+        return {
+            'valid': len(errors) == 0,
+            'errors': errors,
         }
 
     def put_bucket_lifecycle(
@@ -284,6 +325,13 @@ class BucketService:
             raise InconsistentDataError('Invalid bucket name.')
 
         events = self.s3.get_bucket_events(bucket)
+
+        _notification_keys = {
+            'QueueConfigurations',
+            'TopicConfigurations',
+            'LambdaFunctionConfigurations',
+        }
+        events = {k: v for k, v in events.items() if k in _notification_keys and v}
 
         return {
             'bucket': bucket,

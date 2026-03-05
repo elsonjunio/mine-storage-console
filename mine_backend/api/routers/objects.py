@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, UploadFile
 from mine_backend.core.security import extract_sts_credentials
 from mine_backend.config import get_s3_client
 from mine_backend.services.object_service import ObjectService
@@ -15,6 +15,8 @@ from mine_backend.api.schemas.objects import (
     DeleteObjectVersionResponse,
     RestoreObjectVersionResponse,
     ObjectMetadataResponse,
+    UpdateObjectMetadataRequest,
+    UpdateObjectMetadataResponse,
     UpdateObjectTagsResponse,
     ObjectTagsResponse,
     PresignedDownloadRequest,
@@ -102,6 +104,23 @@ def move_object(
         dest_bucket,
         dest_key,
     )
+    return success_response(response)
+
+
+@router.post(
+    '/upload',
+    response_model=StandardResponse[ObjectMessageReponse],
+)
+async def upload_object(
+    bucket: str,
+    key: str,
+    content_type: str | None = None,
+    file: UploadFile = File(...),
+    service: ObjectService = Depends(get_object_service),
+):
+    data = await file.read()
+    ct = content_type or file.content_type or 'application/octet-stream'
+    response = await service.upload_object_proxy(bucket, key, data, ct)
     return success_response(response)
 
 
@@ -199,6 +218,22 @@ def get_object_metadata(
     service: ObjectService = Depends(get_object_service),
 ):
     response = service.get_object_metadata(bucket, key)
+    return success_response(response)
+
+
+@router.put(
+    '/metadata',
+    response_model=StandardResponse[UpdateObjectMetadataResponse],
+)
+def update_object_metadata(
+    payload: UpdateObjectMetadataRequest,
+    service: ObjectService = Depends(get_object_service),
+):
+    response = service.update_object_metadata(
+        payload.bucket,
+        payload.key,
+        payload.metadata,
+    )
     return success_response(response)
 
 

@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { API } from './api.config';
@@ -35,6 +35,8 @@ import type {
   BucketPolicyResponse,
   UpdateBucketPolicyRequest,
   UpdateBucketLifecycleRequest,
+  LifecycleValidationResponse,
+  PolicyValidationResponse,
   ListObjectsResponse,
   ObjectMessageReponse,
   GenerateUploadUrlResponse,
@@ -44,6 +46,8 @@ import type {
   DeleteObjectVersionResponse,
   RestoreObjectVersionResponse,
   ObjectMetadataResponse,
+  UpdateObjectMetadataRequest,
+  UpdateObjectMetadataResponse,
   ObjectTagsResponse,
   UpdateObjectTagsRequest,
   UpdateObjectTagsResponse,
@@ -230,6 +234,10 @@ export class ApiService {
     return this.http.delete<StandardResponse<BucketStatusResponse>>(this.url(API.BUCKET(name)));
   }
 
+  getBucketVersioning(name: string): Observable<StandardResponse<BucketVersionResponse>> {
+    return this.http.get<StandardResponse<BucketVersionResponse>>(this.url(API.BUCKET_VERSIONING(name)));
+  }
+
   setBucketVersioning(
     name: string,
     enabled: boolean,
@@ -286,6 +294,16 @@ export class ApiService {
     );
   }
 
+  validateBucketPolicy(
+    name: string,
+    body: UpdateBucketPolicyRequest,
+  ): Observable<StandardResponse<PolicyValidationResponse>> {
+    return this.http.post<StandardResponse<PolicyValidationResponse>>(
+      this.url(API.BUCKET_POLICY_VALIDATE(name)),
+      body,
+    );
+  }
+
   getBucketLifecycle(name: string): Observable<StandardResponse<unknown>> {
     return this.http.get<StandardResponse<unknown>>(this.url(API.BUCKET_LIFECYCLE(name)));
   }
@@ -299,6 +317,16 @@ export class ApiService {
 
   deleteBucketLifecycle(name: string): Observable<StandardResponse<unknown>> {
     return this.http.delete<StandardResponse<unknown>>(this.url(API.BUCKET_LIFECYCLE(name)));
+  }
+
+  validateBucketLifecycle(
+    name: string,
+    body: UpdateBucketLifecycleRequest,
+  ): Observable<StandardResponse<LifecycleValidationResponse>> {
+    return this.http.post<StandardResponse<LifecycleValidationResponse>>(
+      this.url(API.BUCKET_LIFECYCLE_VALIDATE(name)),
+      body,
+    );
   }
 
   getBucketEvents(name: string): Observable<StandardResponse<unknown>> {
@@ -369,6 +397,20 @@ export class ApiService {
       null,
       { params },
     );
+  }
+
+  uploadObject(bucket: string, key: string, file: File): Observable<HttpEvent<StandardResponse<ObjectMessageReponse>>> {
+    const params = new HttpParams()
+      .set('bucket', bucket)
+      .set('key', key)
+      .set('content_type', file.type || 'application/octet-stream');
+    const formData = new FormData();
+    formData.append('file', file);
+    const req = new HttpRequest('POST', this.url(API.OBJECTS_UPLOAD), formData, {
+      params,
+      reportProgress: true,
+    });
+    return this.http.request(req);
   }
 
   generateUploadUrl(
@@ -446,6 +488,15 @@ export class ApiService {
     return this.http.get<StandardResponse<ObjectMetadataResponse>>(
       this.url(API.OBJECTS_METADATA),
       { params },
+    );
+  }
+
+  updateObjectMetadata(
+    body: UpdateObjectMetadataRequest,
+  ): Observable<StandardResponse<UpdateObjectMetadataResponse>> {
+    return this.http.put<StandardResponse<UpdateObjectMetadataResponse>>(
+      this.url(API.OBJECTS_METADATA),
+      body,
     );
   }
 

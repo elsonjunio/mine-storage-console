@@ -207,6 +207,16 @@ export interface UpdateBucketLifecycleRequest {
   lifecycle: Record<string, unknown>;
 }
 
+export interface LifecycleValidationResponse {
+  valid: boolean;
+  errors: string[];
+}
+
+export interface PolicyValidationResponse {
+  valid: boolean;
+  errors: string[];
+}
+
 // ─── Objects ──────────────────────────────────────────────────────────────────
 
 export interface ObjectItemResponse {
@@ -287,6 +297,18 @@ export interface ObjectMetadataResponse {
   last_modified: string;
   content_type?: string | null;
   metadata?: Record<string, string> | null;
+}
+
+export interface UpdateObjectMetadataRequest {
+  bucket: string;
+  key: string;
+  metadata: Record<string, string>;
+}
+
+export interface UpdateObjectMetadataResponse {
+  bucket: string;
+  key: string;
+  message: string;
 }
 
 export interface ObjectTagsResponse {
