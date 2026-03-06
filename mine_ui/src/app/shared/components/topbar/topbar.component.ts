@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { LayoutService } from '../../../core/layout/layout.service';
 import { ThemeService, ThemeMode } from '../../../core/theme/theme.service';
@@ -15,7 +16,7 @@ interface ThemeOption {
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [TranslatePipe],
+  imports: [TranslatePipe, RouterLink],
   template: `
     <header class="h-16 border-b flex items-center justify-between px-6 z-10 flex-shrink-0 bg-adaptive-surface border-adaptive-border">
 
@@ -135,6 +136,20 @@ interface ThemeOption {
                 </div>
               </div>
 
+              <!-- Admin links -->
+              @if (userService.isAdmin()) {
+                <div class="p-2 border-t border-adaptive-border">
+                  <a
+                    routerLink="/users"
+                    (click)="isMenuOpen.set(false)"
+                    [class]="adminLinkClass"
+                  >
+                    <span class="material-symbols-outlined text-[18px]">manage_accounts</span>
+                    {{ 'TOPBAR.USER_MENU.MANAGE_USERS' | translate }}
+                  </a>
+                </div>
+              }
+
               <!-- Logout -->
               <div class="p-2 border-t border-adaptive-border">
                 <button
@@ -229,6 +244,13 @@ export class TopbarComponent {
     return this.dark
       ? `${base} text-slate-500 hover:text-slate-200 hover:bg-white/5`
       : `${base} text-slate-500 hover:text-slate-700 hover:bg-black/5`;
+  }
+
+  get adminLinkClass(): string {
+    const base = 'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors';
+    return this.dark
+      ? `${base} text-slate-300 hover:bg-white/5`
+      : `${base} text-slate-700 hover:bg-black/5`;
   }
 
   langOptionClasses(code: string): string {

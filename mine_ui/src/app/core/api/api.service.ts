@@ -93,12 +93,12 @@ export class ApiService {
     return this.http.delete<StandardResponse<unknown>>(this.url(API.USER(username)));
   }
 
-  enableUser(username: string): Observable<StandardResponse<unknown>> {
-    return this.http.post<StandardResponse<unknown>>(this.url(API.USER_ENABLE(username)), null);
+  enableUser(username: string): Observable<StandardResponse<UserResponse[]>> {
+    return this.http.post<StandardResponse<UserResponse[]>>(this.url(API.USER_ENABLE(username)), null);
   }
 
-  disableUser(username: string): Observable<StandardResponse<unknown>> {
-    return this.http.post<StandardResponse<unknown>>(this.url(API.USER_DISABLE(username)), null);
+  disableUser(username: string): Observable<StandardResponse<UserResponse[]>> {
+    return this.http.post<StandardResponse<UserResponse[]>>(this.url(API.USER_DISABLE(username)), null);
   }
 
   // ─── Groups ───────────────────────────────────────────────────────────────
@@ -111,8 +111,8 @@ export class ApiService {
     return this.http.post<StandardResponse<GroupResponse[]>>(this.url(API.GROUPS), body);
   }
 
-  getGroup(name: string): Observable<StandardResponse<GroupResponse>> {
-    return this.http.get<StandardResponse<GroupResponse>>(this.url(API.GROUP(name)));
+  getGroup(name: string): Observable<StandardResponse<GroupResponse[]>> {
+    return this.http.get<StandardResponse<GroupResponse[]>>(this.url(API.GROUP(name)));
   }
 
   deleteGroup(name: string): Observable<StandardResponse<unknown>> {
