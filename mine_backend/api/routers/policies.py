@@ -5,6 +5,7 @@ from mine_backend.api.utils.response import success_response
 from mine_backend.api.schemas.response import StandardResponse
 from mine_backend.api.schemas.policies import (
     PolicyResponse,
+    PolicyGroupsResponse,
     PolicyAttachedResponse,
     PolicyDetachedResponse,
     CreatePolicyRequest,
@@ -30,6 +31,19 @@ def list_policies(
 ):
     policies = service.list_policies()
     return success_response(policies)
+
+
+@router.get(
+    '/{name}/groups',
+    response_model=StandardResponse[List[PolicyGroupsResponse]],
+)
+def get_policy_groups(
+    name: str,
+    service: PolicyService = Depends(get_service),
+    user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
+):
+    groups = service.get_groups_by_policy(name)
+    return success_response([PolicyGroupsResponse(policy=name, groups=groups or [])])
 
 
 @router.get(

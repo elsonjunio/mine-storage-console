@@ -115,3 +115,8 @@ Any third-party names mentioned are trademarks of their respective owners.
 * [ ] Multi-provider support
 * [ ] Capability discovery UI
 * [ ] Observability layer
+
+---
+tools:
+ - npx @modelcontextprotocol/inspector
+ - npx @modelcontextprotocol/inspector http://localhost:8000/mcp

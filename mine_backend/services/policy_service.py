@@ -12,8 +12,6 @@ from mine_backend.exceptions.application import (
 )
 
 
-
-
 class PolicyService:
     def __init__(self, storage_admin: UserAdminPort):
         self.storage_admin = storage_admin
@@ -76,5 +74,51 @@ class PolicyService:
     def detach_policy(self, policy: str, username: str):
         try:
             return self.storage_admin.detach_policy(policy, username)
+        except RuntimeError as e:
+            self._handle_storage_admin_error(e)
+
+    def get_groups_by_policy(self, policy_name: str) -> list[str]:
+        try:
+            groups_data = self.storage_admin.list_groups()
+            if not groups_data:
+                return []
+
+            first = (
+                groups_data[0]
+                if isinstance(groups_data, list)
+                else groups_data
+            )
+            all_group_names: list[str] = getattr(first, 'groups', None) or []
+
+            attached: list[str] = []
+            for group_name in all_group_names:
+                try:
+                    policy_data = self.storage_admin.get_policy_from_group(
+                        group_name
+                    )
+                    if not policy_data:
+                        continue
+                    item = (
+                        policy_data[0]
+                        if isinstance(policy_data, list)
+                        else policy_data
+                    )
+                    result = getattr(item, 'result', None)
+                    if not result:
+                        continue
+                    for mapping in (
+                        getattr(result, 'group_mappings', None) or []
+                    ):
+                        if getattr(
+                            mapping, 'group', None
+                        ) == group_name and policy_name in (
+                            getattr(mapping, 'policies', None) or []
+                        ):
+                            attached.append(group_name)
+                            break
+                except Exception:
+                    continue
+
+            return attached
         except RuntimeError as e:
             self._handle_storage_admin_error(e)

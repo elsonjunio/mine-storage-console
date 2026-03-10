@@ -7,6 +7,7 @@ import { ApiService } from '../../core/api/api.service';
 import { LayoutService } from '../../core/layout/layout.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { UserService } from '../../core/auth/user.service';
+import { ToastService } from '../../core/toast/toast.service';
 import { UiBreadcrumbComponent } from '../../shared/components';
 import type { BreadcrumbItem } from '../../shared/components';
 import type { BucketResponse } from '../../core/api/api.types';
@@ -301,6 +302,7 @@ export class BucketsComponent implements OnInit {
   private api = inject(ApiService);
   private layout = inject(LayoutService);
   private theme = inject(ThemeService);
+  private toast = inject(ToastService);
   readonly userService = inject(UserService);
 
   readonly buckets = signal<BucketRow[]>([]);
@@ -354,6 +356,8 @@ export class BucketsComponent implements OnInit {
           this.loadUsage(res.data);
         }
       }
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to load buckets');
     } finally {
       this.loading.set(false);
     }
@@ -372,7 +376,7 @@ export class BucketsComponent implements OnInit {
             );
           }
         })
-        .catch(() => {});
+        .catch(err => this.toast.fromHttpError(err, `Failed to load usage for ${bucket.name}`));
     });
   }
 
@@ -400,8 +404,11 @@ export class BucketsComponent implements OnInit {
     this.creating.set(true);
     try {
       await firstValueFrom(this.api.createBucket(name));
+      this.toast.success('Bucket created', `"${name}" was created successfully`);
       this.cancelCreate();
       await this.load();
+    } catch (err) {
+      this.toast.fromHttpError(err, `Failed to create bucket "${name}"`);
     } finally {
       this.creating.set(false);
     }
@@ -422,8 +429,11 @@ export class BucketsComponent implements OnInit {
     this.deleting.set(true);
     try {
       await firstValueFrom(this.api.deleteBucket(name));
+      this.toast.success('Bucket deleted', `"${name}" was deleted`);
       this.deleteTarget.set(null);
       await this.load();
+    } catch (err) {
+      this.toast.fromHttpError(err, `Failed to delete bucket "${name}"`);
     } finally {
       this.deleting.set(false);
     }

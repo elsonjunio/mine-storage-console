@@ -23,6 +23,7 @@ import type {
   CreatedCredentialsResponse,
   CreateCredentialRequest,
   PolicyResponse,
+  PolicyGroupsResponse,
   CreatePolicyRequest,
   AttachPolicyRequest,
   PolicyAttachedResponse,
@@ -51,6 +52,9 @@ import type {
   ObjectTagsResponse,
   UpdateObjectTagsRequest,
   UpdateObjectTagsResponse,
+  QuotaBucketRow,
+  GlobalQuotaRequest,
+  GlobalQuotaResponse,
   NotificationConfigResponse,
   CreateWebhookRequest,
 } from './api.types';
@@ -195,8 +199,12 @@ export class ApiService {
     return this.http.post<StandardResponse<PolicyResponse[]>>(this.url(API.POLICIES), body);
   }
 
-  getPolicy(name: string): Observable<StandardResponse<PolicyResponse>> {
-    return this.http.get<StandardResponse<PolicyResponse>>(this.url(API.POLICY(name)));
+  getPolicy(name: string): Observable<StandardResponse<PolicyResponse[]>> {
+    return this.http.get<StandardResponse<PolicyResponse[]>>(this.url(API.POLICY(name)));
+  }
+
+  getPolicyGroups(name: string): Observable<StandardResponse<PolicyGroupsResponse[]>> {
+    return this.http.get<StandardResponse<PolicyGroupsResponse[]>>(this.url(API.POLICY_GROUPS(name)));
   }
 
   deletePolicy(name: string): Observable<StandardResponse<unknown>> {
@@ -514,6 +522,20 @@ export class ApiService {
       this.url(API.OBJECTS_TAGS),
       body,
     );
+  }
+
+  // ─── Quotas ───────────────────────────────────────────────────────────────
+
+  getQuotasOverview(): Observable<StandardResponse<QuotaBucketRow[]>> {
+    return this.http.get<StandardResponse<QuotaBucketRow[]>>(this.url(API.QUOTAS));
+  }
+
+  setGlobalQuota(body: GlobalQuotaRequest): Observable<StandardResponse<GlobalQuotaResponse>> {
+    return this.http.put<StandardResponse<GlobalQuotaResponse>>(this.url(API.QUOTA_GLOBAL), body);
+  }
+
+  removeBucketQuota(name: string): Observable<StandardResponse<unknown>> {
+    return this.http.delete<StandardResponse<unknown>>(this.url(API.QUOTA_BUCKET(name)));
   }
 
   // ─── Admin Notifications ──────────────────────────────────────────────────

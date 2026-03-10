@@ -24,12 +24,12 @@ interface NavGroup {
 
       <!-- Brand / Logo Area -->
       <div class="h-16 flex items-center px-6 border-b flex-shrink-0 bg-adaptive-sidebar-top border-adaptive-border">
-        <div class="flex items-center gap-3">
+        <a routerLink="/" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
           <div class="bg-primary/20 p-1.5 rounded-lg text-primary">
             <span class="material-symbols-outlined text-[24px]">dns</span>
           </div>
           <h1 class="text-base font-semibold tracking-tight" [class]="headingClass">Mine Console</h1>
-        </div>
+        </a>
       </div>
 
       <!-- Navigation -->
@@ -95,7 +95,7 @@ export class SidebarComponent {
     {
       labelKey: 'SIDEBAR.GROUPS.SYSTEM',
       items: [
-        { labelKey: 'SIDEBAR.NAV.NOTIFICATIONS', icon: 'notifications', route: '/notifications', badge: 2 },
+        { labelKey: 'SIDEBAR.NAV.NOTIFICATIONS', icon: 'notifications', route: '/notifications' },
         { labelKey: 'SIDEBAR.NAV.QUOTAS', icon: 'pie_chart', route: '/quotas' },
         { labelKey: 'SIDEBAR.NAV.AUDIT_LOGS', icon: 'history_edu', route: '/audit-logs' },
       ],

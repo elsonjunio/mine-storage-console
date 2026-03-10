@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
 import { LayoutService } from '../../core/layout/layout.service';
 import { ThemeService } from '../../core/theme/theme.service';
+import { ToastService } from '../../core/toast/toast.service';
 import type { GroupResponse, UserResponse } from '../../core/api/api.types';
 
 interface UserRow extends UserResponse { username: string; }
@@ -701,6 +702,7 @@ export class GroupsComponent implements OnInit {
   private api = inject(ApiService);
   private layout = inject(LayoutService);
   private theme = inject(ThemeService);
+  private toast = inject(ToastService);
 
   readonly groups = signal<string[]>([]);
   readonly loading = signal(true);
@@ -855,6 +857,8 @@ export class GroupsComponent implements OnInit {
         await firstValueFrom(this.api.enableGroup(name));
       }
       await this.selectGroup(name);
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to toggle group status');
     } finally {
       this.enablingGroup.set(false);
     }
@@ -866,9 +870,12 @@ export class GroupsComponent implements OnInit {
     this.deletingGroup.set(true);
     try {
       await firstValueFrom(this.api.deleteGroup(name));
+      this.toast.success('Group deleted', `"${name}" was deleted`);
       this.showDeleteConfirmGroup.set(null);
       if (this.selectedGroup()?.group_name === name) this.selectedGroup.set(null);
       await this.loadGroups();
+    } catch (err) {
+      this.toast.fromHttpError(err, `Failed to delete group "${name}"`);
     } finally {
       this.deletingGroup.set(false);
     }
@@ -903,8 +910,11 @@ export class GroupsComponent implements OnInit {
         name: this.createGroupName().trim(),
         users: [...this.createGroupSelectedUsers()],
       }));
+      this.toast.success('Group created', `"${this.createGroupName().trim()}" was created successfully`);
       this.showCreateModal.set(false);
       await this.loadGroups();
+    } catch (err) {
+      this.toast.fromHttpError(err, `Failed to create group "${this.createGroupName().trim()}"`);
     } finally {
       this.creating.set(false);
     }
@@ -930,6 +940,8 @@ export class GroupsComponent implements OnInit {
     try {
       await firstValueFrom(this.api.removeGroupUsers(g.group_name, { users: [username] }));
       await this.selectGroup(g.group_name);
+    } catch (err) {
+      this.toast.fromHttpError(err, `Failed to remove member "${username}"`);
     } finally {
       this.removingMember.set(null);
     }
@@ -977,6 +989,8 @@ export class GroupsComponent implements OnInit {
       await firstValueFrom(this.api.addGroupUsers({ name, users }));
       this.showAddMemberModal.set(false);
       await this.selectGroup(name);
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to add members to group');
     } finally {
       this.addingMember.set(false);
     }
@@ -1006,6 +1020,8 @@ export class GroupsComponent implements OnInit {
       this.showAttachPolicyModal.set(false);
       this.selectedPolicyToAttach.set(null);
       await this.selectGroup(g.group_name);
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to attach policy');
     } finally {
       this.attachingPolicy.set(false);
     }
@@ -1018,6 +1034,8 @@ export class GroupsComponent implements OnInit {
     try {
       await firstValueFrom(this.api.detachGroupPolicy({ group: g.group_name, policy }));
       this.groupPolicies.update(ps => ps.filter(p => p !== policy));
+    } catch (err) {
+      this.toast.fromHttpError(err, `Failed to detach policy "${policy}"`);
     } finally {
       this.detachingPolicy.set(null);
     }

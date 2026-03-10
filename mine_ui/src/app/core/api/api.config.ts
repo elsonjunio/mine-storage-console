@@ -30,6 +30,7 @@ export const API = {
   // Policies
   POLICIES: '/policies',
   POLICY: (name: string) => `/policies/${encodeURIComponent(name)}`,
+  POLICY_GROUPS: (name: string) => `/policies/${encodeURIComponent(name)}/groups`,
   POLICY_ATTACH: '/policies/attach',
   POLICY_DETACH: '/policies/detach',
 
@@ -57,6 +58,11 @@ export const API = {
   OBJECTS_RESTORE_VERSION: '/objects/restore-version',
   OBJECTS_METADATA: '/objects/metadata',
   OBJECTS_TAGS: '/objects/tags',
+
+  // Quotas
+  QUOTAS: '/quotas',
+  QUOTA_GLOBAL: '/quotas/global',
+  QUOTA_BUCKET: (name: string) => `/quotas/${encodeURIComponent(name)}`,
 
   // Admin Notifications
   NOTIFICATIONS: (type: string) => `/admin/notifications/${encodeURIComponent(type)}`,

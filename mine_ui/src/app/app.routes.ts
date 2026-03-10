@@ -38,6 +38,24 @@ export const routes: Routes = [
       import('./features/groups/groups').then(m => m.GroupsComponent),
   },
   {
+    path: 'policies',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/policies/policies').then(m => m.PoliciesComponent),
+  },
+  {
+    path: 'notifications',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/notifications/notifications').then(m => m.NotificationsComponent),
+  },
+  {
+    path: 'quotas',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/quotas/quotas').then(m => m.QuotasComponent),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () =>

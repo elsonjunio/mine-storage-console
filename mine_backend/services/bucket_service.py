@@ -187,6 +187,76 @@ class BucketService:
         except RuntimeError as e:
             self._handle_storage_admin_error(e)
 
+    def get_quotas_overview(self) -> list[dict]:
+        buckets = self.s3.list_buckets()
+        result = []
+        for bucket in buckets:
+            name = bucket.name
+
+            try:
+                usage = self.s3.get_bucket_usage(name)
+                size_bytes = usage.size_bytes
+                objects = usage.objects
+            except Exception:
+                size_bytes = 0
+                objects = 0
+
+            quota_bytes = None
+            try:
+                quota_data = self.storage_admin.get_bucket_quota(name)
+                if quota_data:
+                    item = (
+                        quota_data[0]
+                        if isinstance(quota_data, list)
+                        else quota_data
+                    )
+                    qb = getattr(item, 'quota_bytes', None)
+                    if qb and qb > 0:
+                        quota_bytes = int(qb)
+            except Exception:
+                pass
+
+            usage_percent = None
+            if quota_bytes and quota_bytes > 0:
+                usage_percent = round((size_bytes / quota_bytes) * 100, 1)
+
+            result.append(
+                {
+                    'name': name,
+                    'size_bytes': size_bytes,
+                    'objects': objects,
+                    'quota_bytes': quota_bytes,
+                    'usage_percent': usage_percent,
+                }
+            )
+
+        return result
+
+    def set_global_quota(self, quota_bytes: int) -> dict:
+        if quota_bytes <= 0:
+            raise InconsistentDataError('Quota must be greater than zero.')
+
+        buckets = self.s3.list_buckets()
+        applied = 0
+        errors: list[str] = []
+
+        for bucket in buckets:
+            try:
+                self.set_quota(bucket.name, quota_bytes)
+                applied += 1
+            except Exception:
+                errors.append(bucket.name)
+
+        return {'applied': applied, 'errors': errors}
+
+    def remove_quota(self, name: str):
+        if not self.storage_admin:
+            raise InconsistentDataError('Admin client not configured.')
+        try:
+            return self.storage_admin.set_bucket_quota(name, '0GiB')
+        except RuntimeError as e:
+            self._handle_storage_admin_error(e)
+
     def get_bucket_policy(self, bucket: str):
 
         if not BUCKET_REGEX.match(bucket):

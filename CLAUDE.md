@@ -1,5 +1,7 @@
 # CLAUDE.md — Project Instructions for Claude Code
 
+> **Logbook:** See [MEMORY.md](MEMORY.md) for a running log of decisions, completed tasks, and session context.
+
 ## Project Overview
 
 **MINE** (MINE Is Not Enterprise) is a lightweight, clean storage management platform. It provides a REST API backend (Python/FastAPI) for managing S3-compatible object storage, with an Angular frontend dashboard in development.
@@ -142,6 +144,14 @@ S3_CLIENT_PATH=mine_adapter_minio.factory
 | `mine_backend/exceptions/application.py` | All domain exceptions |
 | `mine_backend/api/exception_handlers.py` | Maps exceptions to HTTP responses |
 | `mine_backend/api/schemas/response.py` | `StandardResponse` wrapper |
+| `mine_backend/services/bucket_service.py` | Bucket CRUD and lifecycle management |
+| `mine_backend/services/policy_service.py` | Bucket policy management |
+| `mine_backend/services/object_service.py` | Object listing, upload, delete |
+| `mine_backend/api/routers/buckets.py` | Bucket API endpoints |
+| `mine_backend/api/routers/policies.py` | Policy API endpoints |
+| `mine_backend/api/routers/quotas.py` | Quota API endpoints |
+| `mine_backend/mcp/server.py` | MCP server entry point |
+| `mine_backend/mcp/tools/bucket_tools.py` | MCP bucket tools |
 
 ---
 

@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ApiService } from '../../core/api/api.service';
 import { LayoutService } from '../../core/layout/layout.service';
 import { ThemeService } from '../../core/theme/theme.service';
+import { ToastService } from '../../core/toast/toast.service';
 import type {
   UserResponse,
   CredentialsResponse,
@@ -537,6 +538,7 @@ export class UsersComponent implements OnInit {
   private api = inject(ApiService);
   private layout = inject(LayoutService);
   private theme = inject(ThemeService);
+  private toast = inject(ToastService);
 
   readonly users = signal<UserRow[]>([]);
   readonly loading = signal(true);
@@ -636,8 +638,11 @@ export class UsersComponent implements OnInit {
           this.selectedUser.update(u => u ? { ...u, status: newStatus } : null);
         }
       } else {
+        this.toast.fromHttpError(null, `Failed to ${isEnabled ? 'disable' : 'enable'} user "${user.username}"`);
         await this.loadUsers();
       }
+    } catch (err) {
+      this.toast.fromHttpError(err, `Failed to ${isEnabled ? 'disable' : 'enable'} user "${user.username}"`);
     } finally {
       this.enablingUser.set(null);
     }
@@ -649,9 +654,12 @@ export class UsersComponent implements OnInit {
     this.deletingUser.set(username);
     try {
       await firstValueFrom(this.api.deleteUser(username));
+      this.toast.success('User deleted', `"${username}" was deleted`);
       this.showDeleteConfirmUser.set(null);
       if (this.selectedUser()?.username === username) this.selectedUser.set(null);
       await this.loadUsers();
+    } catch (err) {
+      this.toast.fromHttpError(err, `Failed to delete user "${username}"`);
     } finally {
       this.deletingUser.set(null);
     }
@@ -675,8 +683,11 @@ export class UsersComponent implements OnInit {
       await firstValueFrom(
         this.api.createUser({ username: this.createUsername().trim(), password: this.createPassword().trim() }),
       );
+      this.toast.success('User created', `"${this.createUsername().trim()}" was created successfully`);
       this.showCreateModal.set(false);
       await this.loadUsers();
+    } catch (err) {
+      this.toast.fromHttpError(err, `Failed to create user "${this.createUsername().trim()}"`);
     } finally {
       this.creating.set(false);
     }
@@ -707,6 +718,8 @@ export class UsersComponent implements OnInit {
     try {
       await firstValueFrom(this.api.deleteCredential(accessKey));
       this.drawerCredentials.update(cs => cs.filter(c => c.access_key !== accessKey));
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to delete credential');
     } finally {
       this.deletingCredential.set(null);
     }

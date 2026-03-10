@@ -9,6 +9,7 @@ import { ApiService } from '../../core/api/api.service';
 import { LayoutService } from '../../core/layout/layout.service';
 import { ThemeService } from '../../core/theme/theme.service';
 import { UserService } from '../../core/auth/user.service';
+import { ToastService } from '../../core/toast/toast.service';
 import type {
   ObjectItemResponse,
   ObjectMetadataResponse,
@@ -146,6 +147,24 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
                   <span class="text-xs uppercase font-semibold" [class]="mutedClass">{{ 'BUCKET_DETAIL.OBJECT_COUNT' | translate }}</span>
                   <span class="text-lg font-bold" [class]="titleClass">{{ formatNumber(usage()!.objects) }}</span>
                 </div>
+                @if (mgmtQuota()?.quota_bytes) {
+                  <div [class]="statPillClass" class="min-w-[140px]">
+                    <span class="text-xs uppercase font-semibold" [class]="mutedClass">{{ 'BUCKET_DETAIL.QUOTA_USAGE' | translate }}</span>
+                    <span class="text-lg font-bold" [class]="mgmtUsagePct() >= 90 ? 'text-red-500' : mgmtUsagePct() >= 80 ? 'text-amber-500' : titleClass">
+                      {{ formatSize(usage()!.size_bytes) }} / {{ formatSize(mgmtQuota()!.quota_bytes) }}
+                    </span>
+                    <div class="w-full mt-1 rounded-full h-1.5 overflow-hidden" [class]="mgmtProgressTrackClass">
+                      <div
+                        class="h-1.5 rounded-full transition-all duration-500"
+                        [class]="mgmtUsagePct() >= 90 ? 'bg-red-500' : mgmtUsagePct() >= 80 ? 'bg-amber-500' : 'bg-primary'"
+                        [style.width.%]="mgmtUsagePct()"
+                      ></div>
+                    </div>
+                    <span class="text-xs mt-0.5" [class]="mgmtUsagePct() >= 90 ? 'text-red-500' : mgmtUsagePct() >= 80 ? 'text-amber-500' : mutedClass">
+                      {{ mgmtUsagePct() }}% {{ 'BUCKET_DETAIL.USED' | translate }}
+                    </span>
+                  </div>
+                }
               </div>
             }
           </div>
@@ -1757,6 +1776,7 @@ export class BucketDetailComponent implements OnInit {
   private api = inject(ApiService);
   private layout = inject(LayoutService);
   private theme = inject(ThemeService);
+  private toast = inject(ToastService);
   readonly userService = inject(UserService);
 
   readonly dropZoneInput = viewChild<ElementRef<HTMLInputElement>>('dropZoneInput');
@@ -1964,7 +1984,10 @@ export class BucketDetailComponent implements OnInit {
     this.bucketName.set(name);
     this.layout.setTitle(name);
     this.loadObjects();
-    if (this.userService.isAdmin()) this.loadUsage();
+    if (this.userService.isAdmin()) {
+      this.loadUsage();
+      this.loadQuotaHeader();
+    }
     this.loadBucketDate();
   }
 
@@ -1972,6 +1995,12 @@ export class BucketDetailComponent implements OnInit {
     const res = await firstValueFrom(this.api.listBuckets()).catch(() => null);
     const bucket = res?.data?.find(b => b.name === this.bucketName());
     if (bucket) this.bucketCreated.set(this.formatDate(bucket.creation_date));
+  }
+
+  private async loadQuotaHeader() {
+    const res = await firstValueFrom(this.api.getBucketQuota(this.bucketName())).catch(() => null);
+    const quotaItem = (res?.data as BucketQuotaGetResponse[] | null)?.[0] ?? null;
+    this.mgmtQuota.set(quotaItem);
   }
 
   private async loadUsage() {
@@ -2066,6 +2095,8 @@ export class BucketDetailComponent implements OnInit {
       this.showDeleteConfirm.set(false);
       this.closeDrawer();
       await this.loadObjects();
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to delete object');
     } finally {
       this.drawerDeleting.set(false);
     }
@@ -2112,6 +2143,8 @@ export class BucketDetailComponent implements OnInit {
       );
       this.drawerMetadata.update(m => m ? { ...m, metadata } : m);
       this.drawerMetadataEditing.set(false);
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to save metadata');
     } finally {
       this.drawerMetadataSaving.set(false);
     }
@@ -2157,6 +2190,8 @@ export class BucketDetailComponent implements OnInit {
       );
       if (res.data?.tags) this.drawerTags.set(res.data.tags);
       this.drawerTagsEditing.set(false);
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to save tags');
     } finally {
       this.drawerTagsSaving.set(false);
     }
@@ -2202,6 +2237,8 @@ export class BucketDetailComponent implements OnInit {
       const maxPage = Math.max(0, Math.ceil(this.versionsModalList().length / this.VERSIONS_PAGE_SIZE) - 1);
       if (this.versionsModalPage() > maxPage) this.versionsModalPage.set(maxPage);
       if (wasLatest) await this.selectObject(obj);
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to delete version');
     } finally {
       this.versionsModalDeletingId.set(null);
     }
@@ -2222,6 +2259,8 @@ export class BucketDetailComponent implements OnInit {
       if (res?.data?.versions) this.versionsModalList.set(res.data.versions);
       this.versionsModalPage.set(0);
       await this.selectObject(obj);
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to restore version');
     } finally {
       this.versionsModalRestoringId.set(null);
     }
@@ -2251,6 +2290,8 @@ export class BucketDetailComponent implements OnInit {
       this.closeMoveModal();
       this.closeDrawer();
       await this.loadObjects();
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to move object');
     } finally {
       this.moveLoading.set(false);
     }
@@ -2279,6 +2320,8 @@ export class BucketDetailComponent implements OnInit {
       );
       this.closeCopyModal();
       await this.loadObjects();
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to copy object');
     } finally {
       this.copyLoading.set(false);
     }
@@ -2345,6 +2388,8 @@ export class BucketDetailComponent implements OnInit {
       const res = await firstValueFrom(this.api.setBucketQuota(this.bucketName(), bytes));
       const updated = res.data as unknown as BucketQuotaGetResponse[];
       this.mgmtQuota.set(Array.isArray(updated) ? (updated[0] ?? null) : null);
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to save quota');
     } finally {
       this.mgmtQuotaSaving.set(false);
     }
@@ -2400,6 +2445,8 @@ export class BucketDetailComponent implements OnInit {
           this.api.setBucketLifecycle(this.bucketName(), { lifecycle } as UpdateBucketLifecycleRequest),
         );
       }
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to save lifecycle configuration');
     } finally {
       this.mgmtLifecycleSaving.set(false);
     }
@@ -2473,6 +2520,8 @@ export class BucketDetailComponent implements OnInit {
     try {
       const policy = JSON.parse(raw) as Record<string, unknown>;
       await firstValueFrom(this.api.setBucketPolicy(this.bucketName(), { policy }));
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to save bucket policy');
     } finally {
       this.securityPolicySaving.set(false);
     }
@@ -2486,6 +2535,8 @@ export class BucketDetailComponent implements OnInit {
       this.securityPolicyJson.set('');
       this.securityPolicyErrors.set([]);
       this.securityPolicyValid.set(false);
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to delete bucket policy');
     } finally {
       this.securityPolicyDeleting.set(false);
     }
@@ -2612,6 +2663,8 @@ export class BucketDetailComponent implements OnInit {
       await firstValueFrom(this.api.setBucketEvents(this.bucketName(), config));
       this.eventsRows.set(this.normalizeEvents(config));
       this.closeEventModal();
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to save event configuration');
     } finally {
       this.eventModalSaving.set(false);
     }
@@ -2630,6 +2683,8 @@ export class BucketDetailComponent implements OnInit {
       }
       this.eventsRows.set(rows);
       if (this.expandedEventId() === row.id) this.expandedEventId.set(null);
+    } catch (err) {
+      this.toast.fromHttpError(err, 'Failed to delete event');
     } finally {
       this.eventsDeletingId.set(null);
     }

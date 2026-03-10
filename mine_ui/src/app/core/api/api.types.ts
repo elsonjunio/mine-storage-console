@@ -155,6 +155,11 @@ export interface AttachPolicyRequest {
   username: string;
 }
 
+export interface PolicyGroupsResponse {
+  policy: string;
+  groups: string[];
+}
+
 export interface PolicyAttachedResponse {
   policies_attached?: string[] | null;
   user: string;
@@ -328,6 +333,25 @@ export interface UpdateObjectTagsResponse {
   key: string;
   tags?: Record<string, string> | null;
   message: string;
+}
+
+// ─── Quotas ───────────────────────────────────────────────────────────────────
+
+export interface QuotaBucketRow {
+  name: string;
+  size_bytes: number;
+  objects: number;
+  quota_bytes: number | null;
+  usage_percent: number | null;
+}
+
+export interface GlobalQuotaRequest {
+  quota_bytes: number;
+}
+
+export interface GlobalQuotaResponse {
+  applied: number;
+  errors: string[];
 }
 
 // ─── Notifications ────────────────────────────────────────────────────────────
