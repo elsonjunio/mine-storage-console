@@ -173,18 +173,9 @@ interface PolicyRow {
             <!-- Tabs -->
             <div class="flex gap-8 -mb-px">
               <button
-                (click)="activeTab.set('json')"
-                class="pb-3 text-sm font-medium transition-colors border-b-2"
-                [class]="activeTab() === 'json' ? 'text-primary border-primary' : 'border-transparent ' + mutedClass"
+                class="pb-3 text-sm font-medium transition-colors border-b-2 text-primary border-primary"
               >
                 {{ 'POLICIES.TAB_JSON' | translate }}
-              </button>
-              <button
-                (click)="activeTab.set('usage')"
-                class="pb-3 text-sm font-medium transition-colors border-b-2"
-                [class]="activeTab() === 'usage' ? 'text-primary border-primary' : 'border-transparent ' + mutedClass"
-              >
-                {{ 'POLICIES.TAB_USAGE' | translate }}
               </button>
             </div>
           </div>
@@ -192,8 +183,7 @@ interface PolicyRow {
           <!-- Content Body -->
           <div class="flex-1 overflow-y-auto p-8">
 
-            @if (activeTab() === 'json') {
-              <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
 
                 <!-- JSON Editor -->
                 <div class="xl:col-span-2 flex flex-col gap-4">
@@ -368,19 +358,6 @@ interface PolicyRow {
 
                 </div>
               </div>
-
-            } @else {
-              <!-- Policy Usage tab placeholder -->
-              <div class="flex flex-col items-center justify-center py-24 gap-4">
-                <div class="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                  <span class="material-symbols-outlined text-[32px]">analytics</span>
-                </div>
-                <div class="text-center">
-                  <p class="font-semibold" [class]="titleClass">{{ 'POLICIES.USAGE_COMING_SOON' | translate }}</p>
-                  <p class="text-sm mt-1" [class]="mutedClass">{{ 'POLICIES.USAGE_COMING_SOON_DESC' | translate }}</p>
-                </div>
-              </div>
-            }
 
           </div>
 
@@ -650,9 +627,6 @@ export class PoliciesComponent implements OnInit {
   showDeleteConfirm = signal<string | null>(null);
   deleting = signal(false);
 
-  // Tabs
-  activeTab = signal<'json' | 'usage'>('json');
-
   // Attached groups
   attachedGroups = signal<string[]>([]);
   allGroups = signal<string[]>([]);
@@ -723,7 +697,6 @@ export class PoliciesComponent implements OnInit {
 
   async selectPolicy(policy: PolicyRow) {
     this.selectedPolicy.set(policy);
-    this.activeTab.set('json');
     this.editorContent.set('');
     this.editorOriginalContent.set('');
     this.attachedGroups.set([]);
