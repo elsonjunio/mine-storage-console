@@ -2,6 +2,8 @@ from typing import List
 from fastapi import APIRouter, Depends
 from mine_backend.services.credential_service import CredentialService
 from mine_backend.api.dependencies.authorization import require_role
+from mine_backend.api.dependencies.cache import get_cache_manager
+from mine_backend.core.cache import CacheManager
 from mine_backend.api.schemas.response import StandardResponse
 from mine_backend.api.utils.response import success_response
 from mine_backend.api.schemas.credentials import (
@@ -24,12 +26,17 @@ def get_service():
     '',
     response_model=StandardResponse[List[CredentialsResponse]],
 )
-def list_credentials(
+async def list_credentials(
     username: str,
     service: CredentialService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    credentials = service.list_credentials(username)
+    credentials = await cache.get_or_set(
+        f'credentials:{username}',
+        service.list_credentials,
+        username,
+    )
     return success_response(credentials)
 
 
@@ -37,9 +44,10 @@ def list_credentials(
     '',
     response_model=StandardResponse[List[CreatedCredentialsResponse]],
 )
-def create_credential(
+async def create_credential(
     payload: CreateCredentialRequest,
     service: CredentialService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     credentials = service.create_credential(
@@ -47,7 +55,7 @@ def create_credential(
         payload.policy,
         payload.expiration,
     )
-
+    await cache.invalidate(f'credentials:{payload.username}')
     return success_response(credentials)
 
 
@@ -55,10 +63,13 @@ def create_credential(
     '/{access_key}',
     response_model=StandardResponse[List[CredentialsResponse]],
 )
-def delete_credential(
+async def delete_credential(
     access_key: str,
     service: CredentialService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     credentials = service.delete_credential(access_key)
+    # username not available from access_key alone — bust all credential caches
+    await cache.invalidate_prefix('credentials:')
     return success_response(credentials)

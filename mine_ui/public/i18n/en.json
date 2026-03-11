@@ -78,7 +78,8 @@
       "GROUPS_DESC": "Manage user groups",
       "POLICIES_DESC": "Configure access policies",
       "CREDENTIALS_DESC": "Manage access credentials",
-      "NOTIFICATIONS_DESC": "Configure event notifications"
+      "NOTIFICATIONS_DESC": "Configure event notifications",
+      "QUOTAS_DESC": "Monitor and manage storage quotas"
     },
     "RECENT": {
       "TITLE": "Recent Buckets",
@@ -273,6 +274,7 @@
       "LANGUAGE": "Language",
       "ROLE_ADMIN": "Admin",
       "ROLE_USER": "User",
+      "CHANGE_PASSWORD": "Change Password",
       "MANAGE_USERS": "User Management",
       "LOGOUT": "Sign out"
     }
@@ -503,5 +505,19 @@
     "DELETE_MESSAGE": "Are you sure you want to delete this user? This will remove all credentials and group memberships. This action cannot be undone.",
     "DELETE_CANCEL": "Cancel",
     "DELETE_CONFIRM": "Delete"
+  },
+  "SEARCH": {
+    "PLACEHOLDER": "Search resources...",
+    "HINT": "Type a name and press Enter to search",
+    "PRESS_ENTER": "Press Enter to search",
+    "SEARCHING": "Searching...",
+    "FOUND": "{{count}} result(s) found",
+    "NO_RESULTS": "No results found",
+    "CANCEL": "Cancel",
+    "TYPE_BUCKET": "Buckets",
+    "TYPE_OBJECT": "Objects",
+    "TYPE_USER": "Users",
+    "TYPE_GROUP": "Groups",
+    "TYPE_POLICY": "Policies"
   }
 }

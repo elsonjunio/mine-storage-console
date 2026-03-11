@@ -1,9 +1,12 @@
 from fastapi import APIRouter, Depends
 from typing import List
 
+from mine_backend.api.schemas.buckets import BucketQuotaGetResponse
 from mine_backend.services.bucket_service import BucketService
 from mine_backend.api.dependencies.authorization import require_role
 from mine_backend.api.dependencies.auth import get_current_user
+from mine_backend.api.dependencies.cache import get_cache_manager
+from mine_backend.core.cache import CacheManager
 from mine_backend.core.security import extract_sts_credentials
 from mine_backend.api.utils.response import success_response
 from mine_backend.api.schemas.response import StandardResponse
@@ -30,11 +33,12 @@ def get_service(sts=Depends(get_sts)):
     '',
     response_model=StandardResponse[List[QuotaBucketRow]],
 )
-def get_quotas_overview(
+async def get_quotas_overview(
     service: BucketService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    data = service.get_quotas_overview()
+    data = await cache.get_or_set('quotas:overview', service.get_quotas_overview)
     return success_response(data)
 
 
@@ -42,23 +46,27 @@ def get_quotas_overview(
     '/global',
     response_model=StandardResponse[GlobalQuotaResponse],
 )
-def set_global_quota(
+async def set_global_quota(
     payload: GlobalQuotaRequest,
     service: BucketService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     result = service.set_global_quota(payload.quota_bytes)
+    await cache.invalidate('quotas:overview')
     return success_response(result)
 
 
 @router.delete(
     '/{name}',
-    response_model=StandardResponse[dict],
+    response_model=StandardResponse[List[BucketQuotaGetResponse]],
 )
-def remove_bucket_quota(
+async def remove_bucket_quota(
     name: str,
     service: BucketService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     result = service.remove_quota(name)
+    await cache.invalidate('quotas:overview', f'buckets:{name}:quota')
     return success_response(result)

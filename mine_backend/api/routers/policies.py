@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends
 from mine_backend.services.policy_service import PolicyService
 from mine_backend.api.dependencies.authorization import require_role
+from mine_backend.api.dependencies.cache import get_cache_manager
+from mine_backend.core.cache import CacheManager
 from mine_backend.api.utils.response import success_response
 from mine_backend.api.schemas.response import StandardResponse
 from mine_backend.api.schemas.policies import (
@@ -25,11 +27,12 @@ def get_service():
     '',
     response_model=StandardResponse[List[PolicyResponse]],
 )
-def list_policies(
+async def list_policies(
     service: PolicyService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    policies = service.list_policies()
+    policies = await cache.get_or_set('policies:list', service.list_policies)
     return success_response(policies)
 
 
@@ -37,12 +40,17 @@ def list_policies(
     '/{name}/groups',
     response_model=StandardResponse[List[PolicyGroupsResponse]],
 )
-def get_policy_groups(
+async def get_policy_groups(
     name: str,
     service: PolicyService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    groups = service.get_groups_by_policy(name)
+    groups = await cache.get_or_set(
+        f'policies:{name}:groups',
+        service.get_groups_by_policy,
+        name,
+    )
     return success_response([PolicyGroupsResponse(policy=name, groups=groups or [])])
 
 
@@ -50,12 +58,13 @@ def get_policy_groups(
     '/{name}',
     response_model=StandardResponse[List[PolicyResponse]],
 )
-def get_policy(
+async def get_policy(
     name: str,
     service: PolicyService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    policy = service.get_policy(name)
+    policy = await cache.get_or_set(f'policies:{name}', service.get_policy, name)
     return success_response(policy)
 
 
@@ -63,12 +72,14 @@ def get_policy(
     '',
     response_model=StandardResponse[List[PolicyResponse]],
 )
-def create_policy(
+async def create_policy(
     payload: CreatePolicyRequest,
     service: PolicyService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     policy = service.create_policy(payload.name, payload.document)
+    await cache.invalidate('policies:list')
     return success_response(policy)
 
 
@@ -76,12 +87,14 @@ def create_policy(
     '/{name}',
     response_model=StandardResponse[List[PolicyResponse]],
 )
-def delete_policy(
+async def delete_policy(
     name: str,
     service: PolicyService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     policy = service.delete_policy(name)
+    await cache.invalidate('policies:list', f'policies:{name}')
     return success_response(policy)
 
 
@@ -89,12 +102,14 @@ def delete_policy(
     '/attach',
     response_model=StandardResponse[List[PolicyAttachedResponse]],
 )
-def attach_policy(
+async def attach_policy(
     payload: AttachPolicyRequest,
     service: PolicyService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     attached_policy = service.attach_policy(payload.policy, payload.username)
+    await cache.invalidate(f'policies:{payload.policy}:groups', 'users:list')
     return success_response(attached_policy)
 
 
@@ -102,10 +117,12 @@ def attach_policy(
     '/detach',
     response_model=StandardResponse[List[PolicyDetachedResponse]],
 )
-def detach_policy(
+async def detach_policy(
     payload: AttachPolicyRequest,
     service: PolicyService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     attached_policy = service.detach_policy(payload.policy, payload.username)
+    await cache.invalidate(f'policies:{payload.policy}:groups', 'users:list')
     return success_response(attached_policy)

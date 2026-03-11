@@ -80,7 +80,6 @@ export class SidebarComponent {
       labelKey: 'SIDEBAR.GROUPS.OPERATIONAL',
       items: [
         { labelKey: 'SIDEBAR.NAV.BUCKETS', icon: 'database', route: '/buckets' },
-        { labelKey: 'SIDEBAR.NAV.OBJECTS', icon: 'folder_open', route: '/objects' },
       ],
     },
     {
@@ -89,7 +88,6 @@ export class SidebarComponent {
         { labelKey: 'SIDEBAR.NAV.USERS', icon: 'group', route: '/users' },
         { labelKey: 'SIDEBAR.NAV.GROUPS', icon: 'groups', route: '/groups' },
         { labelKey: 'SIDEBAR.NAV.POLICIES', icon: 'description', route: '/policies' },
-        { labelKey: 'SIDEBAR.NAV.CREDENTIALS', icon: 'key', route: '/credentials' },
       ],
     },
     {
@@ -97,7 +95,6 @@ export class SidebarComponent {
       items: [
         { labelKey: 'SIDEBAR.NAV.NOTIFICATIONS', icon: 'notifications', route: '/notifications' },
         { labelKey: 'SIDEBAR.NAV.QUOTAS', icon: 'pie_chart', route: '/quotas' },
-        { labelKey: 'SIDEBAR.NAV.AUDIT_LOGS', icon: 'history_edu', route: '/audit-logs' },
       ],
     },
   ];

@@ -78,7 +78,8 @@
       "GROUPS_DESC": "Gestiona grupos de usuarios",
       "POLICIES_DESC": "Configura políticas de acceso",
       "CREDENTIALS_DESC": "Gestiona credenciales de acceso",
-      "NOTIFICATIONS_DESC": "Configura notificaciones de eventos"
+      "NOTIFICATIONS_DESC": "Configura notificaciones de eventos",
+      "QUOTAS_DESC": "Supervisa y gestiona las cuotas de almacenamiento"
     },
     "RECENT": {
       "TITLE": "Buckets Recientes",
@@ -273,6 +274,7 @@
       "LANGUAGE": "Idioma",
       "ROLE_ADMIN": "Admin",
       "ROLE_USER": "Usuario",
+      "CHANGE_PASSWORD": "Cambiar Contraseña",
       "MANAGE_USERS": "Gestión de Usuarios",
       "LOGOUT": "Cerrar sesión"
     }
@@ -503,5 +505,19 @@
     "DELETE_MESSAGE": "¿Está seguro de que desea eliminar este usuario? Esto eliminará todas las credenciales y membresías de grupos. Esta acción no se puede deshacer.",
     "DELETE_CANCEL": "Cancelar",
     "DELETE_CONFIRM": "Eliminar"
+  },
+  "SEARCH": {
+    "PLACEHOLDER": "Buscar recursos...",
+    "HINT": "Escribe un nombre y presiona Enter para buscar",
+    "PRESS_ENTER": "Presiona Enter para buscar",
+    "SEARCHING": "Buscando...",
+    "FOUND": "{{count}} resultado(s) encontrado(s)",
+    "NO_RESULTS": "No se encontraron resultados",
+    "CANCEL": "Cancelar",
+    "TYPE_BUCKET": "Buckets",
+    "TYPE_OBJECT": "Objetos",
+    "TYPE_USER": "Usuarios",
+    "TYPE_GROUP": "Grupos",
+    "TYPE_POLICY": "Políticas"
   }
 }

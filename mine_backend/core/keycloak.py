@@ -17,8 +17,8 @@ async def get_jwks():
         return _jwks_cache
 
     jwks_url = (
-        f"{settings.KEYCLOAK_URL}/realms/"
-        f"{settings.KEYCLOAK_REALM}/protocol/openid-connect/certs"
+        f'{settings.KEYCLOAK_URL}/realms/'
+        f'{settings.KEYCLOAK_REALM}/protocol/openid-connect/certs'
     )
 
     async with httpx.AsyncClient() as client:

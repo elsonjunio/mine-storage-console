@@ -68,4 +68,9 @@ export const API = {
   NOTIFICATIONS: (type: string) => `/admin/notifications/${encodeURIComponent(type)}`,
   NOTIFICATION: (type: string, identifier: string) =>
     `/admin/notifications/${encodeURIComponent(type)}/${encodeURIComponent(identifier)}`,
+
+  // Search
+  SEARCH: '/search',
+  SEARCH_STREAM: (searchId: string) => `/search/${encodeURIComponent(searchId)}/stream`,
+  SEARCH_CANCEL: (searchId: string) => `/search/${encodeURIComponent(searchId)}`,
 };

@@ -253,7 +253,8 @@ class BucketService:
         if not self.storage_admin:
             raise InconsistentDataError('Admin client not configured.')
         try:
-            return self.storage_admin.set_bucket_quota(name, '0GiB')
+            response = self.storage_admin.set_bucket_quota(name, '0GiB')
+            return response
         except RuntimeError as e:
             self._handle_storage_admin_error(e)
 

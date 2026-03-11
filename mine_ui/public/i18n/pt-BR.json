@@ -78,7 +78,8 @@
       "GROUPS_DESC": "Gerencie grupos de usuários",
       "POLICIES_DESC": "Configure políticas de acesso",
       "CREDENTIALS_DESC": "Gerencie credenciais de acesso",
-      "NOTIFICATIONS_DESC": "Configure notificações de eventos"
+      "NOTIFICATIONS_DESC": "Configure notificações de eventos",
+      "QUOTAS_DESC": "Monitore e gerencie cotas de armazenamento"
     },
     "RECENT": {
       "TITLE": "Buckets Recentes",
@@ -273,6 +274,7 @@
       "LANGUAGE": "Idioma",
       "ROLE_ADMIN": "Admin",
       "ROLE_USER": "Usuário",
+      "CHANGE_PASSWORD": "Alterar Senha",
       "MANAGE_USERS": "Gerenciamento de Usuários",
       "LOGOUT": "Sair"
     }
@@ -503,5 +505,19 @@
     "DELETE_MESSAGE": "Tem certeza de que deseja excluir este usuário? Isso removerá todas as credenciais e membros de grupos. Esta ação não pode ser desfeita.",
     "DELETE_CANCEL": "Cancelar",
     "DELETE_CONFIRM": "Excluir"
+  },
+  "SEARCH": {
+    "PLACEHOLDER": "Buscar recursos...",
+    "HINT": "Digite um nome e pressione Enter para buscar",
+    "PRESS_ENTER": "Pressione Enter para buscar",
+    "SEARCHING": "Buscando...",
+    "FOUND": "{{count}} resultado(s) encontrado(s)",
+    "NO_RESULTS": "Nenhum resultado encontrado",
+    "CANCEL": "Cancelar",
+    "TYPE_BUCKET": "Buckets",
+    "TYPE_OBJECT": "Objetos",
+    "TYPE_USER": "Usuários",
+    "TYPE_GROUP": "Grupos",
+    "TYPE_POLICY": "Políticas"
   }
 }

@@ -1206,14 +1206,18 @@ const TABS: { id: Tab; labelKey: string; icon: string }[] = [
 
           <!-- Modal header -->
           <div class="flex items-center justify-between px-6 py-4 border-b shrink-0" [class]="borderClass">
-            <div>
+            <div class="min-w-0 mr-4">
               <h3 class="text-lg font-semibold" [class]="titleClass">{{ 'BUCKET_DETAIL.UPLOAD.TITLE' | translate }}</h3>
-              <p class="mt-1 text-sm" [class]="mutedClass">
-                {{ 'BUCKET_DETAIL.UPLOAD.SUBTITLE' | translate }}
-                <span class="font-mono" [class]="subtleClass">{{ bucketName() }}/{{ currentPrefix() }}</span>
+              <p class="mt-1 text-sm flex items-baseline gap-1 min-w-0" [class]="mutedClass">
+                <span class="shrink-0">{{ 'BUCKET_DETAIL.UPLOAD.SUBTITLE' | translate }}</span>
+                <span
+                  class="font-mono truncate"
+                  [class]="subtleClass"
+                  [title]="bucketName() + '/' + currentPrefix()"
+                >{{ bucketName() }}/{{ currentPrefix() }}</span>
               </p>
             </div>
-            <button (click)="closeUploadModal()" class="p-1 rounded transition-colors" [class]="closeButtonClass">
+            <button (click)="closeUploadModal()" class="p-1 rounded transition-colors shrink-0" [class]="closeButtonClass">
               <span class="material-symbols-outlined text-[20px]">close</span>
             </button>
           </div>
@@ -1983,7 +1987,13 @@ export class BucketDetailComponent implements OnInit {
     const name = this.route.snapshot.paramMap.get('name') ?? '';
     this.bucketName.set(name);
     this.layout.setTitle(name);
-    this.loadObjects();
+    const focusKey = this.route.snapshot.queryParamMap.get('key');
+    this.loadObjects().then(() => {
+      if (focusKey) {
+        const obj = this.objects().find(o => o.key === focusKey);
+        if (obj) this.selectObject(obj);
+      }
+    });
     if (this.userService.isAdmin()) {
       this.loadUsage();
       this.loadQuotaHeader();

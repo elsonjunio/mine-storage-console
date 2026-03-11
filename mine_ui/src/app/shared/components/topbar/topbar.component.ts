@@ -6,6 +6,7 @@ import { ThemeService, ThemeMode } from '../../../core/theme/theme.service';
 import { I18nService } from '../../../core/i18n/i18n.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { UserService } from '../../../core/auth/user.service';
+import { SearchDialogComponent } from '../search-dialog/search-dialog.component';
 
 interface ThemeOption {
   mode: ThemeMode;
@@ -16,8 +17,12 @@ interface ThemeOption {
 @Component({
   selector: 'app-topbar',
   standalone: true,
-  imports: [TranslatePipe, RouterLink],
+  imports: [TranslatePipe, RouterLink, SearchDialogComponent],
   template: `
+    @if (isSearchOpen()) {
+      <app-search-dialog (close)="isSearchOpen.set(false)" />
+    }
+
     <header class="h-16 border-b flex items-center justify-between px-6 z-10 flex-shrink-0 bg-adaptive-surface border-adaptive-border">
 
       <!-- Left: Page Title -->
@@ -26,33 +31,24 @@ interface ThemeOption {
       </div>
 
       <!-- Right: Controls -->
-      <div class="flex items-center gap-4">
+      <div class="flex items-center gap-4 flex-shrink-0">
 
         <!-- Search -->
-        <div class="relative hidden md:block w-64">
+        <button
+          (click)="isSearchOpen.set(true)"
+          class="relative hidden md:flex items-center w-64 cursor-text"
+          [class]="searchInputClass"
+        >
           <span class="absolute inset-y-0 left-0 flex items-center pl-3" [class]="iconMutedClass">
             <span class="material-symbols-outlined text-[20px]">search</span>
           </span>
-          <input
-            [class]="searchInputClass"
-            [placeholder]="'TOPBAR.SEARCH_PLACEHOLDER' | translate"
-            type="text"
-          />
+          <span class="pl-10 pr-14 text-sm" [class]="iconMutedClass">{{ 'TOPBAR.SEARCH_PLACEHOLDER' | translate }}</span>
           <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
             <span [class]="kbdClass">⌘K</span>
           </div>
-        </div>
+        </button>
 
         <div class="h-6 w-px bg-adaptive-border mx-2"></div>
-
-        <!-- Notifications -->
-        <button [class]="iconButtonClass">
-          <span class="material-symbols-outlined text-[24px]">notifications</span>
-          <span class="absolute top-2 right-2 flex h-2 w-2">
-            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-            <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-          </span>
-        </button>
 
         <!-- Profile + Dropdown -->
         <div class="relative">
@@ -63,7 +59,7 @@ interface ThemeOption {
             <div class="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-medium text-xs">
               {{ userService.initials() }}
             </div>
-            <span class="text-sm font-medium hidden md:block" [class]="usernameClass">{{ userService.displayName() }}</span>
+            <span class="text-sm font-medium hidden md:block whitespace-nowrap" [class]="usernameClass">{{ userService.displayName() }}</span>
             <span class="material-symbols-outlined text-[16px] transition-transform"
               [class]="iconMutedClass"
               [class.rotate-180]="isMenuOpen()">
@@ -136,6 +132,20 @@ interface ThemeOption {
                 </div>
               </div>
 
+              <!-- Account -->
+              <div class="p-2 border-t border-adaptive-border">
+                <a
+                  [href]="changePasswordUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  (click)="isMenuOpen.set(false)"
+                  [class]="adminLinkClass"
+                >
+                  <span class="material-symbols-outlined text-[18px]">lock_reset</span>
+                  {{ 'TOPBAR.USER_MENU.CHANGE_PASSWORD' | translate }}
+                </a>
+              </div>
+
               <!-- Admin links -->
               @if (userService.isAdmin()) {
                 <div class="p-2 border-t border-adaptive-border">
@@ -176,9 +186,14 @@ export class TopbarComponent {
   readonly userService = inject(UserService);
   private auth = inject(AuthService);
   readonly isMenuOpen = signal(false);
+  readonly isSearchOpen = signal(false);
 
   logout() {
     this.auth.logout();
+  }
+
+  get changePasswordUrl(): string {
+    return this.auth.getChangePasswordUrl();
   }
 
   readonly themeOptions: ThemeOption[] = [
@@ -219,7 +234,7 @@ export class TopbarComponent {
 
   get profileButtonClass(): string {
     const open = this.isMenuOpen();
-    const base = 'flex items-center gap-2 p-1 pr-3 rounded-full border transition-all';
+    const base = 'flex items-center gap-2 p-1 pr-3 rounded-full border transition-all flex-shrink-0';
     return this.dark
       ? `${base} hover:bg-white/5 border-transparent hover:border-border-dark ${open ? 'bg-white/5 border-border-dark' : ''}`
       : `${base} hover:bg-black/5 border-transparent hover:border-border-light ${open ? 'bg-black/5 border-border-light' : ''}`;
@@ -227,8 +242,8 @@ export class TopbarComponent {
 
   get searchInputClass(): string {
     return this.dark
-      ? 'w-full bg-background-dark border border-border-dark text-slate-200 text-sm rounded-lg focus:ring-1 focus:ring-primary focus:border-primary block pl-10 pr-14 p-2 placeholder-slate-500 outline-none'
-      : 'w-full bg-white border border-border-light text-slate-700 text-sm rounded-lg focus:ring-1 focus:ring-primary focus:border-primary block pl-10 pr-14 p-2 placeholder-slate-400 outline-none';
+      ? 'w-full bg-background-dark border border-border-dark rounded-lg hover:border-primary/50 transition-colors text-left py-2 outline-none'
+      : 'w-full bg-white border border-border-light rounded-lg hover:border-primary/50 transition-colors text-left py-2 outline-none';
   }
 
   get kbdClass(): string {

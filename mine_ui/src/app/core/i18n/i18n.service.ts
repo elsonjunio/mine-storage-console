@@ -14,9 +14,9 @@ export class I18nService {
   readonly currentLang = signal<string>('en');
 
   readonly availableLangs: Language[] = [
-    { code: 'en', label: 'English', flag: '🇺🇸' },
     { code: 'pt-BR', label: 'Português', flag: '🇧🇷' },
     { code: 'es', label: 'Español', flag: '🇪🇸' },
+    { code: 'en', label: 'English', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
   ];
 
   init() {

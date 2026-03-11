@@ -24,6 +24,10 @@ class Settings(BaseSettings, extra='allow'):
     ADMIN_PATH: str
     S3_CLIENT_PATH: str
 
+    REDIS_HOST: str = ''
+    REDIS_PORT: int = 0
+    REDIS_DB: int = 0
+
     class Config:
         env_file = '.env'
         env_file_encoding = 'utf-8'

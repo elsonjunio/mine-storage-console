@@ -12,3 +12,4 @@ export { SidebarComponent } from './sidebar/sidebar.component';
 export { TopbarComponent } from './topbar/topbar.component';
 export { UiBreadcrumbComponent } from './ui-breadcrumb/ui-breadcrumb.component';
 export type { BreadcrumbItem } from './ui-breadcrumb/ui-breadcrumb.component';
+export { SearchDialogComponent } from './search-dialog/search-dialog.component';

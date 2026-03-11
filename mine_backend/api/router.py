@@ -10,6 +10,7 @@ from mine_backend.api.routers import groups
 from mine_backend.api.routers import policies
 from mine_backend.api.routers import admin_notifications
 from mine_backend.api.routers import quotas
+from mine_backend.api.routers import search
 
 
 api_router = APIRouter()
@@ -24,3 +25,4 @@ api_router.include_router(buckets.router)
 api_router.include_router(objects.router)
 api_router.include_router(admin_notifications.router)
 api_router.include_router(quotas.router)
+api_router.include_router(search.router)

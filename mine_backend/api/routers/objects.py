@@ -3,6 +3,8 @@ from mine_backend.core.security import extract_sts_credentials
 from mine_backend.config import get_s3_client
 from mine_backend.services.object_service import ObjectService
 from mine_backend.api.dependencies.auth import get_current_user
+from mine_backend.api.dependencies.cache import get_cache_manager
+from mine_backend.core.cache import CacheManager
 
 from mine_backend.api.schemas.response import StandardResponse
 from mine_backend.api.utils.response import success_response
@@ -40,14 +42,23 @@ def get_object_service(sts=Depends(get_sts)):
     '',
     response_model=StandardResponse[ListObjectsResponse],
 )
-def list_objects(
+async def list_objects(
     bucket: str,
     prefix: str | None = None,
     limit: int = 100,
     continuation_token: str | None = None,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
-    response = service.list_objects(bucket, prefix, limit, continuation_token)
+    cache_key = f'objects:{bucket}:{prefix or ""}:{limit}:{continuation_token or ""}'
+    response = await cache.get_or_set(
+        cache_key,
+        service.list_objects,
+        bucket,
+        prefix,
+        limit,
+        continuation_token,
+    )
     return success_response(response)
 
 
@@ -55,12 +66,14 @@ def list_objects(
     '',
     response_model=StandardResponse[ObjectMessageReponse],
 )
-def delete_object(
+async def delete_object(
     key: str,
     bucket: str,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
     response = service.delete_object(bucket, key)
+    await cache.invalidate_prefix(f'objects:{bucket}:')
     return success_response(response)
 
 
@@ -71,19 +84,16 @@ def delete_object(
     '/copy',
     response_model=StandardResponse[ObjectMessageReponse],
 )
-def copy_object(
+async def copy_object(
     source_bucket: str,
     source_key: str,
     dest_bucket: str,
     dest_key: str,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
-    response = service.copy_object(
-        source_bucket,
-        source_key,
-        dest_bucket,
-        dest_key,
-    )
+    response = service.copy_object(source_bucket, source_key, dest_bucket, dest_key)
+    await cache.invalidate_prefix(f'objects:{dest_bucket}:')
     return success_response(response)
 
 
@@ -91,19 +101,16 @@ def copy_object(
     '/move',
     response_model=StandardResponse[ObjectMessageReponse],
 )
-def move_object(
+async def move_object(
     source_bucket: str,
     source_key: str,
     dest_bucket: str,
     dest_key: str,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
-    response = service.move_object(
-        source_bucket,
-        source_key,
-        dest_bucket,
-        dest_key,
-    )
+    response = service.move_object(source_bucket, source_key, dest_bucket, dest_key)
+    await cache.invalidate_prefix(f'objects:{source_bucket}:', f'objects:{dest_bucket}:')
     return success_response(response)
 
 
@@ -117,10 +124,12 @@ async def upload_object(
     content_type: str | None = None,
     file: UploadFile = File(...),
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
     data = await file.read()
     ct = content_type or file.content_type or 'application/octet-stream'
     response = await service.upload_object_proxy(bucket, key, data, ct)
+    await cache.invalidate_prefix(f'objects:{bucket}:')
     return success_response(response)
 
 
@@ -171,12 +180,18 @@ def generate_presigned_download(
     '/versions',
     response_model=StandardResponse[ListObjectVersionsResponse],
 )
-def list_versions(
+async def list_versions(
     bucket: str,
     key: str,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
-    response = service.list_object_versions(bucket, key)
+    response = await cache.get_or_set(
+        f'objects:{bucket}:{key}:versions',
+        service.list_object_versions,
+        bucket,
+        key,
+    )
     return success_response(response)
 
 
@@ -184,13 +199,16 @@ def list_versions(
     '/version',
     response_model=StandardResponse[DeleteObjectVersionResponse],
 )
-def delete_version(
+async def delete_version(
     bucket: str,
     key: str,
     version_id: str,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
     response = service.delete_object_version(bucket, key, version_id)
+    await cache.invalidate(f'objects:{bucket}:{key}:versions')
+    await cache.invalidate_prefix(f'objects:{bucket}:')
     return success_response(response)
 
 
@@ -198,13 +216,16 @@ def delete_version(
     '/restore-version',
     response_model=StandardResponse[RestoreObjectVersionResponse],
 )
-def restore_version(
+async def restore_version(
     bucket: str,
     key: str,
     version_id: str,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
     response = service.restore_object_version(bucket, key, version_id)
+    await cache.invalidate(f'objects:{bucket}:{key}:versions')
+    await cache.invalidate_prefix(f'objects:{bucket}:')
     return success_response(response)
 
 
@@ -212,12 +233,18 @@ def restore_version(
     '/metadata',
     response_model=StandardResponse[ObjectMetadataResponse],
 )
-def get_object_metadata(
+async def get_object_metadata(
     bucket: str,
     key: str,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
-    response = service.get_object_metadata(bucket, key)
+    response = await cache.get_or_set(
+        f'objects:{bucket}:{key}:metadata',
+        service.get_object_metadata,
+        bucket,
+        key,
+    )
     return success_response(response)
 
 
@@ -225,15 +252,13 @@ def get_object_metadata(
     '/metadata',
     response_model=StandardResponse[UpdateObjectMetadataResponse],
 )
-def update_object_metadata(
+async def update_object_metadata(
     payload: UpdateObjectMetadataRequest,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
-    response = service.update_object_metadata(
-        payload.bucket,
-        payload.key,
-        payload.metadata,
-    )
+    response = service.update_object_metadata(payload.bucket, payload.key, payload.metadata)
+    await cache.invalidate(f'objects:{payload.bucket}:{payload.key}:metadata')
     return success_response(response)
 
 
@@ -241,12 +266,18 @@ def update_object_metadata(
     '/tags',
     response_model=StandardResponse[ObjectTagsResponse],
 )
-def get_object_tags(
+async def get_object_tags(
     bucket: str,
     key: str,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
-    response = service.get_object_tags(bucket, key)
+    response = await cache.get_or_set(
+        f'objects:{bucket}:{key}:tags',
+        service.get_object_tags,
+        bucket,
+        key,
+    )
     return success_response(response)
 
 
@@ -254,13 +285,11 @@ def get_object_tags(
     '/tags',
     response_model=StandardResponse[UpdateObjectTagsResponse],
 )
-def update_object_tags(
+async def update_object_tags(
     payload: UpdateObjectTagsRequest,
     service: ObjectService = Depends(get_object_service),
+    cache: CacheManager = Depends(get_cache_manager),
 ):
-    response = service.update_object_tags(
-        payload.bucket,
-        payload.key,
-        payload.tags,
-    )
+    response = service.update_object_tags(payload.bucket, payload.key, payload.tags)
+    await cache.invalidate(f'objects:{payload.bucket}:{payload.key}:tags')
     return success_response(response)
