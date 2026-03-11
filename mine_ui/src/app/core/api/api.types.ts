@@ -155,6 +155,11 @@ export interface AttachPolicyRequest {
   username: string;
 }
 
+export interface PolicyGroupsResponse {
+  policy: string;
+  groups: string[];
+}
+
 export interface PolicyAttachedResponse {
   policies_attached?: string[] | null;
   user: string;
@@ -205,6 +210,16 @@ export interface UpdateBucketPolicyRequest {
 
 export interface UpdateBucketLifecycleRequest {
   lifecycle: Record<string, unknown>;
+}
+
+export interface LifecycleValidationResponse {
+  valid: boolean;
+  errors: string[];
+}
+
+export interface PolicyValidationResponse {
+  valid: boolean;
+  errors: string[];
 }
 
 // ─── Objects ──────────────────────────────────────────────────────────────────
@@ -289,6 +304,18 @@ export interface ObjectMetadataResponse {
   metadata?: Record<string, string> | null;
 }
 
+export interface UpdateObjectMetadataRequest {
+  bucket: string;
+  key: string;
+  metadata: Record<string, string>;
+}
+
+export interface UpdateObjectMetadataResponse {
+  bucket: string;
+  key: string;
+  message: string;
+}
+
 export interface ObjectTagsResponse {
   bucket: string;
   key: string;
@@ -306,6 +333,25 @@ export interface UpdateObjectTagsResponse {
   key: string;
   tags?: Record<string, string> | null;
   message: string;
+}
+
+// ─── Quotas ───────────────────────────────────────────────────────────────────
+
+export interface QuotaBucketRow {
+  name: string;
+  size_bytes: number;
+  objects: number;
+  quota_bytes: number | null;
+  usage_percent: number | null;
+}
+
+export interface GlobalQuotaRequest {
+  quota_bytes: number;
+}
+
+export interface GlobalQuotaResponse {
+  applied: number;
+  errors: string[];
 }
 
 // ─── Notifications ────────────────────────────────────────────────────────────

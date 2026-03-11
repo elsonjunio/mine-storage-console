@@ -17,7 +17,10 @@ dependencies = [
     "python-dotenv (>=1.2.1,<2.0.0)",
     "cryptography (>=46.0.5,<47.0.0)",
     "python-json-logger (>=4.0.0,<5.0.0)",
-    "mine-spec @ git+https://github.com/elsonjunio/mine-spec.git@v0.1.2",
+    "python-multipart (>=0.0.22,<0.0.23)",
+    "mcp (>=1.26.0,<2.0.0)",
+    "mine-spec @ git+https://github.com/elsonjunio/mine-spec.git@v0.1.4",
+    "redis (>=7.3.0,<8.0.0)",
 ]
 
 [tool.poetry]

@@ -14,6 +14,48 @@ export const routes: Routes = [
       import('./features/demo/demo').then(m => m.Demo),
   },
   {
+    path: 'buckets',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/buckets/buckets').then(m => m.BucketsComponent),
+  },
+  {
+    path: 'buckets/:name',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/bucket-detail/bucket-detail').then(m => m.BucketDetailComponent),
+  },
+  {
+    path: 'users',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/users/users').then(m => m.UsersComponent),
+  },
+  {
+    path: 'groups',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/groups/groups').then(m => m.GroupsComponent),
+  },
+  {
+    path: 'policies',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/policies/policies').then(m => m.PoliciesComponent),
+  },
+  {
+    path: 'notifications',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/notifications/notifications').then(m => m.NotificationsComponent),
+  },
+  {
+    path: 'quotas',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/quotas/quotas').then(m => m.QuotasComponent),
+  },
+  {
     path: '',
     canActivate: [authGuard],
     loadComponent: () =>

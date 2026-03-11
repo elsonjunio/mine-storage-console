@@ -16,7 +16,7 @@ class BucketStatusResponse(BaseModel):
 
 class BucketVersionResponse(BaseModel):
     bucket: str
-    versioning: str
+    versioning: Optional[str] = None
 
 
 class BucketQuotaResponse(BaseModel):
@@ -48,3 +48,8 @@ class UpdateBucketPolicyRequest(BaseModel):
 
 class UpdateBucketLifecycleRequest(BaseModel):
     lifecycle: Dict[str, Any]
+
+
+class LifecycleValidationResponse(BaseModel):
+    valid: bool
+    errors: List[str]

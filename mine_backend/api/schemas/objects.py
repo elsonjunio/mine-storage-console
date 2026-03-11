@@ -75,6 +75,12 @@ class ObjectMetadataResponse(BaseModel):
     metadata: Dict[str, str] = {}
 
 
+class UpdateObjectMetadataResponse(BaseModel):
+    bucket: str
+    key: str
+    message: str
+
+
 class UpdateObjectTagsResponse(BaseModel):
     bucket: str
     key: str

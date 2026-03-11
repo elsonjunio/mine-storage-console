@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends
 from typing import List
 from mine_backend.services.group_service import GroupService
 from mine_backend.api.dependencies.authorization import require_role
+from mine_backend.api.dependencies.cache import get_cache_manager
+from mine_backend.core.cache import CacheManager
 
 from mine_backend.api.schemas.response import StandardResponse
 from mine_backend.api.schemas.group import (
@@ -33,11 +35,12 @@ def get_service():
     '',
     response_model=StandardResponse[List[GroupListResponse]],
 )
-def list_groups(
+async def list_groups(
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    group_list = service.list_groups()
+    group_list = await cache.get_or_set('groups:list', service.list_groups)
     return success_response(group_list)
 
 
@@ -45,13 +48,13 @@ def list_groups(
     '/{name}',
     response_model=StandardResponse[List[GroupResponse]],
 )
-def get_group(
+async def get_group(
     name: str,
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-
-    group = service.get_group(name)
+    group = await cache.get_or_set(f'groups:{name}', service.get_group, name)
     return success_response(group)
 
 
@@ -59,25 +62,29 @@ def get_group(
     '',
     response_model=StandardResponse[List[GroupResponse]],
 )
-def create_group(
+async def create_group(
     payload: CreateGroupRequest,
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    group =  service.create_group(payload.name, payload.users)
+    group = service.create_group(payload.name, payload.users)
+    await cache.invalidate('groups:list')
     return success_response(group)
+
 
 @router.delete(
     '/{name}',
     response_model=StandardResponse[List[GroupResponse]],
 )
-def delete_group(
+async def delete_group(
     name: str,
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-
     group = service.delete_group(name)
+    await cache.invalidate('groups:list', f'groups:{name}')
     return success_response(group)
 
 
@@ -85,12 +92,14 @@ def delete_group(
     '/users',
     response_model=StandardResponse[List[GroupResponse]],
 )
-def add_users(
+async def add_users(
     payload: GroupUsersRequest,
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     group = service.add_users(payload.name, payload.users)
+    await cache.invalidate('groups:list', f'groups:{payload.name}')
     return success_response(group)
 
 
@@ -98,14 +107,15 @@ def add_users(
     '/{name}/users',
     response_model=StandardResponse[List[GroupResponse]],
 )
-def remove_users(
+async def remove_users(
     name: str,
     payload: DeleteGroupUsersRequest,
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-
     group = service.remove_users(name, payload.users)
+    await cache.invalidate('groups:list', f'groups:{name}')
     return success_response(group)
 
 
@@ -113,12 +123,14 @@ def remove_users(
     '/enable/{name}',
     response_model=StandardResponse[List[GroupResponse]],
 )
-def enable_group(
+async def enable_group(
     name: str,
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     group = service.enable_group(name)
+    await cache.invalidate('groups:list', f'groups:{name}')
     return success_response(group)
 
 
@@ -126,12 +138,14 @@ def enable_group(
     '/disable/{name}',
     response_model=StandardResponse[List[GroupResponse]],
 )
-def disable_group(
+async def disable_group(
     name: str,
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     group = service.disable_group(name)
+    await cache.invalidate('groups:list', f'groups:{name}')
     return success_response(group)
 
 
@@ -139,12 +153,14 @@ def disable_group(
     '/attach-policy',
     response_model=StandardResponse[List[GroupPolicyAttached]],
 )
-def attach_policy(
+async def attach_policy(
     payload: GroupPolicyRequest,
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     group_policy = service.attach_policy(payload.group, payload.policy)
+    await cache.invalidate(f'groups:{payload.group}:policies')
     return success_response(group_policy)
 
 
@@ -152,12 +168,14 @@ def attach_policy(
     '/detach-policy',
     response_model=StandardResponse[List[GroupPolicyDeatached]],
 )
-def detach_policy(
+async def detach_policy(
     payload: GroupPolicyRequest,
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     group_policy = service.detach_policy(payload.group, payload.policy)
+    await cache.invalidate(f'groups:{payload.group}:policies')
     return success_response(group_policy)
 
 
@@ -165,10 +183,15 @@ def detach_policy(
     '/{name}/policies',
     response_model=StandardResponse[List[GroupPolicyMappReponse]],
 )
-def policies(
+async def policies(
     name: str,
     service: GroupService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    group_policy = service.get_attach_policy(name)
+    group_policy = await cache.get_or_set(
+        f'groups:{name}:policies',
+        service.get_attach_policy,
+        name,
+    )
     return success_response(group_policy)

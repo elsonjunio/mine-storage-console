@@ -81,6 +81,13 @@ export class AuthService {
     await this.router.navigateByUrl('/');
   }
 
+  getChangePasswordUrl(): string {
+    return new URL(
+      `/realms/${this.config.keycloakRealm}/account/#/security/signingin`,
+      this.config.keycloakUrl,
+    ).toString();
+  }
+
   logout(): void {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
 

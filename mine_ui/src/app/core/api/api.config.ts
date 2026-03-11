@@ -30,6 +30,7 @@ export const API = {
   // Policies
   POLICIES: '/policies',
   POLICY: (name: string) => `/policies/${encodeURIComponent(name)}`,
+  POLICY_GROUPS: (name: string) => `/policies/${encodeURIComponent(name)}/groups`,
   POLICY_ATTACH: '/policies/attach',
   POLICY_DETACH: '/policies/detach',
 
@@ -40,13 +41,16 @@ export const API = {
   BUCKET_QUOTA: (name: string) => `/buckets/${encodeURIComponent(name)}/quota`,
   BUCKET_USAGE: (name: string) => `/buckets/${encodeURIComponent(name)}/usage`,
   BUCKET_POLICY: (name: string) => `/buckets/${encodeURIComponent(name)}/policy`,
+  BUCKET_POLICY_VALIDATE: (name: string) => `/buckets/${encodeURIComponent(name)}/policy/validate`,
   BUCKET_LIFECYCLE: (name: string) => `/buckets/${encodeURIComponent(name)}/lifecycle`,
+  BUCKET_LIFECYCLE_VALIDATE: (name: string) => `/buckets/${encodeURIComponent(name)}/lifecycle/validate`,
   BUCKET_EVENTS: (name: string) => `/buckets/${encodeURIComponent(name)}/events`,
 
   // Objects
   OBJECTS: '/objects',
   OBJECTS_COPY: '/objects/copy',
   OBJECTS_MOVE: '/objects/move',
+  OBJECTS_UPLOAD: '/objects/upload',
   OBJECTS_UPLOAD_URL: '/objects/upload-url',
   OBJECTS_PRESIGNED_DOWNLOAD: '/objects/presigned-download',
   OBJECTS_VERSIONS: '/objects/versions',
@@ -55,8 +59,18 @@ export const API = {
   OBJECTS_METADATA: '/objects/metadata',
   OBJECTS_TAGS: '/objects/tags',
 
+  // Quotas
+  QUOTAS: '/quotas',
+  QUOTA_GLOBAL: '/quotas/global',
+  QUOTA_BUCKET: (name: string) => `/quotas/${encodeURIComponent(name)}`,
+
   // Admin Notifications
   NOTIFICATIONS: (type: string) => `/admin/notifications/${encodeURIComponent(type)}`,
   NOTIFICATION: (type: string, identifier: string) =>
     `/admin/notifications/${encodeURIComponent(type)}/${encodeURIComponent(identifier)}`,
+
+  // Search
+  SEARCH: '/search',
+  SEARCH_STREAM: (searchId: string) => `/search/${encodeURIComponent(searchId)}/stream`,
+  SEARCH_CANCEL: (searchId: string) => `/search/${encodeURIComponent(searchId)}`,
 };

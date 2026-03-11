@@ -3,6 +3,8 @@ from mine_backend.api.utils.response import success_response
 from mine_backend.services.user_service import UserService
 
 from mine_backend.api.dependencies.authorization import require_role
+from mine_backend.api.dependencies.cache import get_cache_manager
+from mine_backend.core.cache import CacheManager
 
 from mine_backend.api.schemas.response import StandardResponse
 from mine_backend.api.schemas.user import (
@@ -24,12 +26,12 @@ def get_service():
     '',
     response_model=StandardResponse[List[UserResponse]],
 )
-def list_users(
+async def list_users(
     service: UserService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    users = service.list_users()
-
+    users = await cache.get_or_set('users:list', service.list_users)
     return success_response(users)
 
 
@@ -37,24 +39,25 @@ def list_users(
     '/{username}',
     response_model=StandardResponse[List[UserResponse]],
 )
-def get_user(
+async def get_user(
     username: str,
     service: UserService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    user_data = service.get_user(username)
-
+    user_data = await cache.get_or_set(f'users:{username}', service.get_user, username)
     return success_response(user_data)
 
 
 @router.post('', response_model=StandardResponse[List[UserResponse]])
-def create_user(
+async def create_user(
     payload: CreateUserRequest,
     service: UserService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     user_data = service.create_user(payload.username, payload.password)
-
+    await cache.invalidate('users:list')
     return success_response(user_data)
 
 
@@ -62,37 +65,42 @@ def create_user(
     '/{username}',
     response_model=StandardResponse[List[UserResponse]],
 )
-def delete_user(
+async def delete_user(
     username: str,
     service: UserService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
     deleted_user_data = service.delete_user(username)
-
+    await cache.invalidate('users:list', f'users:{username}')
     return success_response(deleted_user_data)
+
 
 @router.post(
     '/{username}/enable',
     response_model=StandardResponse[List[UserResponse]],
 )
-def enable_user(
+async def enable_user(
     username: str,
     service: UserService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    deleted_user_data = service.enable_user(username)
+    result = service.enable_user(username)
+    await cache.invalidate('users:list', f'users:{username}')
+    return success_response(result)
 
-    return success_response(deleted_user_data)
 
 @router.post(
     '/{username}/disable',
     response_model=StandardResponse[List[UserResponse]],
 )
-def disable_user(
+async def disable_user(
     username: str,
     service: UserService = Depends(get_service),
+    cache: CacheManager = Depends(get_cache_manager),
     user=Depends(require_role(f'{settings.ADMIN_ROLE}')),
 ):
-    deleted_user_data = service.disable_user(username)
-
-    return success_response(deleted_user_data)
+    result = service.disable_user(username)
+    await cache.invalidate('users:list', f'users:{username}')
+    return success_response(result)

@@ -23,6 +23,11 @@ class PolicyDetachedResponse(BaseModel):
     user: str
 
 
+class PolicyGroupsResponse(BaseModel):
+    policy: str
+    groups: List[str]
+
+
 class CreatePolicyRequest(BaseModel):
     name: str
     document: Dict[str, Any]

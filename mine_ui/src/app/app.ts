@@ -6,10 +6,11 @@ import { AuthService } from './core/auth/auth.service';
 import { UserService } from './core/auth/user.service';
 import { SidebarComponent } from './shared/components/sidebar/sidebar.component';
 import { TopbarComponent } from './shared/components/topbar/topbar.component';
+import { ToastComponent } from './shared/components/toast/toast.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, SidebarComponent, TopbarComponent],
+  imports: [RouterOutlet, SidebarComponent, TopbarComponent, ToastComponent],
   templateUrl: './app.html',
   styleUrl: './app.scss'
 })

@@ -147,13 +147,6 @@ export class DashboardComponent implements OnInit {
       adminOnly: false,
     },
     {
-      labelKey: 'SIDEBAR.NAV.OBJECTS',
-      descKey: 'DASHBOARD.ACTIONS.OBJECTS_DESC',
-      icon: 'folder_open',
-      route: '/objects',
-      adminOnly: false,
-    },
-    {
       labelKey: 'SIDEBAR.NAV.USERS',
       descKey: 'DASHBOARD.ACTIONS.USERS_DESC',
       icon: 'group',
@@ -175,11 +168,11 @@ export class DashboardComponent implements OnInit {
       adminOnly: true,
     },
     {
-      labelKey: 'SIDEBAR.NAV.CREDENTIALS',
-      descKey: 'DASHBOARD.ACTIONS.CREDENTIALS_DESC',
-      icon: 'key',
-      route: '/credentials',
-      adminOnly: false,
+      labelKey: 'SIDEBAR.NAV.QUOTAS',
+      descKey: 'DASHBOARD.ACTIONS.QUOTAS_DESC',
+      icon: 'data_usage',
+      route: '/quotas',
+      adminOnly: true,
     },
     {
       labelKey: 'SIDEBAR.NAV.NOTIFICATIONS',

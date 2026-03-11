@@ -1,6 +1,7 @@
 from botocore.exceptions import ClientError
 from typing import Optional
 
+import httpx
 from mine_spec.ports.object_storage import ObjectStoragePort
 
 from mine_backend.exceptions.application import (
@@ -131,6 +132,39 @@ class ObjectService:
 
         except ClientError as e:
             self._handle_error(e, source_bucket)
+
+    async def upload_object_proxy(
+        self,
+        bucket: str,
+        key: str,
+        data: bytes,
+        content_type: str,
+    ):
+        if not BUCKET_REGEX.match(bucket):
+            raise InconsistentDataError('Invalid bucket name.')
+
+        try:
+            url = self.s3.generate_upload_url(
+                bucket=bucket,
+                key=key,
+                expires_in=300,
+                content_type=content_type,
+            )
+            async with httpx.AsyncClient() as client:
+                resp = await client.put(
+                    url,
+                    content=data,
+                    headers={'Content-Type': content_type},
+                    timeout=300,
+                )
+            if resp.status_code not in (200, 204):
+                raise UnexpectedError(f'Upload to storage failed: HTTP {resp.status_code}')
+            return {'bucket': bucket, 'key': key, 'message': 'Object uploaded successfully'}
+
+        except UnexpectedError:
+            raise
+        except Exception as e:
+            raise UnexpectedError(f'Could not upload object: {str(e)}')
 
     def generate_upload_url(
         self,

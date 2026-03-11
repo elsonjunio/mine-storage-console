@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams, HttpRequest } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
 import { API } from './api.config';
@@ -23,6 +23,7 @@ import type {
   CreatedCredentialsResponse,
   CreateCredentialRequest,
   PolicyResponse,
+  PolicyGroupsResponse,
   CreatePolicyRequest,
   AttachPolicyRequest,
   PolicyAttachedResponse,
@@ -35,6 +36,8 @@ import type {
   BucketPolicyResponse,
   UpdateBucketPolicyRequest,
   UpdateBucketLifecycleRequest,
+  LifecycleValidationResponse,
+  PolicyValidationResponse,
   ListObjectsResponse,
   ObjectMessageReponse,
   GenerateUploadUrlResponse,
@@ -44,9 +47,14 @@ import type {
   DeleteObjectVersionResponse,
   RestoreObjectVersionResponse,
   ObjectMetadataResponse,
+  UpdateObjectMetadataRequest,
+  UpdateObjectMetadataResponse,
   ObjectTagsResponse,
   UpdateObjectTagsRequest,
   UpdateObjectTagsResponse,
+  QuotaBucketRow,
+  GlobalQuotaRequest,
+  GlobalQuotaResponse,
   NotificationConfigResponse,
   CreateWebhookRequest,
 } from './api.types';
@@ -89,12 +97,12 @@ export class ApiService {
     return this.http.delete<StandardResponse<unknown>>(this.url(API.USER(username)));
   }
 
-  enableUser(username: string): Observable<StandardResponse<unknown>> {
-    return this.http.post<StandardResponse<unknown>>(this.url(API.USER_ENABLE(username)), null);
+  enableUser(username: string): Observable<StandardResponse<UserResponse[]>> {
+    return this.http.post<StandardResponse<UserResponse[]>>(this.url(API.USER_ENABLE(username)), null);
   }
 
-  disableUser(username: string): Observable<StandardResponse<unknown>> {
-    return this.http.post<StandardResponse<unknown>>(this.url(API.USER_DISABLE(username)), null);
+  disableUser(username: string): Observable<StandardResponse<UserResponse[]>> {
+    return this.http.post<StandardResponse<UserResponse[]>>(this.url(API.USER_DISABLE(username)), null);
   }
 
   // ─── Groups ───────────────────────────────────────────────────────────────
@@ -107,8 +115,8 @@ export class ApiService {
     return this.http.post<StandardResponse<GroupResponse[]>>(this.url(API.GROUPS), body);
   }
 
-  getGroup(name: string): Observable<StandardResponse<GroupResponse>> {
-    return this.http.get<StandardResponse<GroupResponse>>(this.url(API.GROUP(name)));
+  getGroup(name: string): Observable<StandardResponse<GroupResponse[]>> {
+    return this.http.get<StandardResponse<GroupResponse[]>>(this.url(API.GROUP(name)));
   }
 
   deleteGroup(name: string): Observable<StandardResponse<unknown>> {
@@ -191,8 +199,12 @@ export class ApiService {
     return this.http.post<StandardResponse<PolicyResponse[]>>(this.url(API.POLICIES), body);
   }
 
-  getPolicy(name: string): Observable<StandardResponse<PolicyResponse>> {
-    return this.http.get<StandardResponse<PolicyResponse>>(this.url(API.POLICY(name)));
+  getPolicy(name: string): Observable<StandardResponse<PolicyResponse[]>> {
+    return this.http.get<StandardResponse<PolicyResponse[]>>(this.url(API.POLICY(name)));
+  }
+
+  getPolicyGroups(name: string): Observable<StandardResponse<PolicyGroupsResponse[]>> {
+    return this.http.get<StandardResponse<PolicyGroupsResponse[]>>(this.url(API.POLICY_GROUPS(name)));
   }
 
   deletePolicy(name: string): Observable<StandardResponse<unknown>> {
@@ -228,6 +240,10 @@ export class ApiService {
 
   deleteBucket(name: string): Observable<StandardResponse<BucketStatusResponse>> {
     return this.http.delete<StandardResponse<BucketStatusResponse>>(this.url(API.BUCKET(name)));
+  }
+
+  getBucketVersioning(name: string): Observable<StandardResponse<BucketVersionResponse>> {
+    return this.http.get<StandardResponse<BucketVersionResponse>>(this.url(API.BUCKET_VERSIONING(name)));
   }
 
   setBucketVersioning(
@@ -286,6 +302,16 @@ export class ApiService {
     );
   }
 
+  validateBucketPolicy(
+    name: string,
+    body: UpdateBucketPolicyRequest,
+  ): Observable<StandardResponse<PolicyValidationResponse>> {
+    return this.http.post<StandardResponse<PolicyValidationResponse>>(
+      this.url(API.BUCKET_POLICY_VALIDATE(name)),
+      body,
+    );
+  }
+
   getBucketLifecycle(name: string): Observable<StandardResponse<unknown>> {
     return this.http.get<StandardResponse<unknown>>(this.url(API.BUCKET_LIFECYCLE(name)));
   }
@@ -299,6 +325,16 @@ export class ApiService {
 
   deleteBucketLifecycle(name: string): Observable<StandardResponse<unknown>> {
     return this.http.delete<StandardResponse<unknown>>(this.url(API.BUCKET_LIFECYCLE(name)));
+  }
+
+  validateBucketLifecycle(
+    name: string,
+    body: UpdateBucketLifecycleRequest,
+  ): Observable<StandardResponse<LifecycleValidationResponse>> {
+    return this.http.post<StandardResponse<LifecycleValidationResponse>>(
+      this.url(API.BUCKET_LIFECYCLE_VALIDATE(name)),
+      body,
+    );
   }
 
   getBucketEvents(name: string): Observable<StandardResponse<unknown>> {
@@ -369,6 +405,20 @@ export class ApiService {
       null,
       { params },
     );
+  }
+
+  uploadObject(bucket: string, key: string, file: File): Observable<HttpEvent<StandardResponse<ObjectMessageReponse>>> {
+    const params = new HttpParams()
+      .set('bucket', bucket)
+      .set('key', key)
+      .set('content_type', file.type || 'application/octet-stream');
+    const formData = new FormData();
+    formData.append('file', file);
+    const req = new HttpRequest('POST', this.url(API.OBJECTS_UPLOAD), formData, {
+      params,
+      reportProgress: true,
+    });
+    return this.http.request(req);
   }
 
   generateUploadUrl(
@@ -449,6 +499,15 @@ export class ApiService {
     );
   }
 
+  updateObjectMetadata(
+    body: UpdateObjectMetadataRequest,
+  ): Observable<StandardResponse<UpdateObjectMetadataResponse>> {
+    return this.http.put<StandardResponse<UpdateObjectMetadataResponse>>(
+      this.url(API.OBJECTS_METADATA),
+      body,
+    );
+  }
+
   getObjectTags(bucket: string, key: string): Observable<StandardResponse<ObjectTagsResponse>> {
     const params = new HttpParams().set('bucket', bucket).set('key', key);
     return this.http.get<StandardResponse<ObjectTagsResponse>>(this.url(API.OBJECTS_TAGS), {
@@ -463,6 +522,20 @@ export class ApiService {
       this.url(API.OBJECTS_TAGS),
       body,
     );
+  }
+
+  // ─── Quotas ───────────────────────────────────────────────────────────────
+
+  getQuotasOverview(): Observable<StandardResponse<QuotaBucketRow[]>> {
+    return this.http.get<StandardResponse<QuotaBucketRow[]>>(this.url(API.QUOTAS));
+  }
+
+  setGlobalQuota(body: GlobalQuotaRequest): Observable<StandardResponse<GlobalQuotaResponse>> {
+    return this.http.put<StandardResponse<GlobalQuotaResponse>>(this.url(API.QUOTA_GLOBAL), body);
+  }
+
+  removeBucketQuota(name: string): Observable<StandardResponse<unknown>> {
+    return this.http.delete<StandardResponse<unknown>>(this.url(API.QUOTA_BUCKET(name)));
   }
 
   // ─── Admin Notifications ──────────────────────────────────────────────────
