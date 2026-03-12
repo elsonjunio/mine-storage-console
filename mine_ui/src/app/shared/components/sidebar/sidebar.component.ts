@@ -67,7 +67,7 @@ interface NavGroup {
       <!-- Sidebar Footer -->
       <div class="p-4 border-t border-adaptive-border flex-shrink-0">
         <div class="flex flex-col">
-          <p class="text-xs text-slate-500">v0.1.0</p>
+          <p class="text-xs text-slate-500">v0.1.1</p>
           <p class="text-xs text-slate-500 opacity-60">{{ 'SIDEBAR.FOOTER.BUILD' | translate }}</p>
         </div>
       </div>
