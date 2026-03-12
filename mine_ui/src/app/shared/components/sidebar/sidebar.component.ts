@@ -1,18 +1,21 @@
-import { Component, inject } from '@angular/core';
+import { Component, computed, inject } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ThemeService } from '../../../core/theme/theme.service';
+import { UserService } from '../../../core/auth/user.service';
 
 interface NavItem {
   labelKey: string;
   icon: string;
   route: string;
   badge?: number;
+  adminOnly?: boolean;
 }
 
 interface NavGroup {
   labelKey: string;
   items: NavItem[];
+  adminOnly?: boolean;
 }
 
 @Component({
@@ -34,7 +37,7 @@ interface NavGroup {
 
       <!-- Navigation -->
       <nav class="flex-1 overflow-y-auto py-6 px-3 space-y-8">
-        @for (group of navGroups; track group.labelKey) {
+        @for (group of visibleNavGroups(); track group.labelKey) {
           <div>
             <h3 class="px-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
               {{ group.labelKey | translate }}
@@ -74,8 +77,9 @@ interface NavGroup {
 })
 export class SidebarComponent {
   private theme = inject(ThemeService);
+  private userService = inject(UserService);
 
-  readonly navGroups: NavGroup[] = [
+  private readonly navGroups: NavGroup[] = [
     {
       labelKey: 'SIDEBAR.GROUPS.OPERATIONAL',
       items: [
@@ -84,6 +88,7 @@ export class SidebarComponent {
     },
     {
       labelKey: 'SIDEBAR.GROUPS.IAM',
+      adminOnly: true,
       items: [
         { labelKey: 'SIDEBAR.NAV.USERS', icon: 'group', route: '/users' },
         { labelKey: 'SIDEBAR.NAV.GROUPS', icon: 'groups', route: '/groups' },
@@ -92,12 +97,17 @@ export class SidebarComponent {
     },
     {
       labelKey: 'SIDEBAR.GROUPS.SYSTEM',
+      adminOnly: true,
       items: [
         { labelKey: 'SIDEBAR.NAV.NOTIFICATIONS', icon: 'notifications', route: '/notifications' },
         { labelKey: 'SIDEBAR.NAV.QUOTAS', icon: 'pie_chart', route: '/quotas' },
       ],
     },
   ];
+
+  readonly visibleNavGroups = computed(() =>
+    this.navGroups.filter(g => !g.adminOnly || this.userService.isAdmin()),
+  );
 
   private get dark(): boolean {
     return this.theme.mode() !== 'light';

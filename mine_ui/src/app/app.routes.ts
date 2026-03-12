@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 
-import { authGuard } from './core/auth/auth.guard';
+import { authGuard, adminGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
   {
@@ -27,31 +27,31 @@ export const routes: Routes = [
   },
   {
     path: 'users',
-    canActivate: [authGuard],
+    canActivate: [adminGuard],
     loadComponent: () =>
       import('./features/users/users').then(m => m.UsersComponent),
   },
   {
     path: 'groups',
-    canActivate: [authGuard],
+    canActivate: [adminGuard],
     loadComponent: () =>
       import('./features/groups/groups').then(m => m.GroupsComponent),
   },
   {
     path: 'policies',
-    canActivate: [authGuard],
+    canActivate: [adminGuard],
     loadComponent: () =>
       import('./features/policies/policies').then(m => m.PoliciesComponent),
   },
   {
     path: 'notifications',
-    canActivate: [authGuard],
+    canActivate: [adminGuard],
     loadComponent: () =>
       import('./features/notifications/notifications').then(m => m.NotificationsComponent),
   },
   {
     path: 'quotas',
-    canActivate: [authGuard],
+    canActivate: [adminGuard],
     loadComponent: () =>
       import('./features/quotas/quotas').then(m => m.QuotasComponent),
   },
