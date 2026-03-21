@@ -28,7 +28,7 @@ O frontend chegou a um nível utilizável, cobrindo as principais operações do
 
 ### Keycloak (autenticação)
 
-O MINE **não gerencia autenticação de usuários por conta própria**. Ele delega completamente essa responsabilidade a um provedor OpenID Connect externo — na configuração padrão, o [Keycloak](https://www.keycloak.org/).
+O MINE **não gerencia autenticação de usuários por conta própria**. Ele delega completamente essa responsabilidade a um provedor OpenID Connect externo — na configuração padrão, o [Keycloak](https://www.keycloak.org/) / (https://www.youtube.com/watch?v=MOEkDiuYWI0).
 
 O fluxo de autenticação funciona da seguinte forma:
 

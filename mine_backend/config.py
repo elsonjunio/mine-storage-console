@@ -28,6 +28,10 @@ class Settings(BaseSettings, extra='allow'):
     REDIS_PORT: int = 0
     REDIS_DB: int = 0
 
+    CORS_ALLOWED_ORIGINS: list[str] = ['http://localhost:4200']
+    MCP_ALLOWED_HOSTS: list[str] = []
+    MCP_ALLOWED_ORIGINS: list[str] = []
+
     class Config:
         env_file = '.env'
         env_file_encoding = 'utf-8'

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from mine_backend.api.router import api_router
 from contextlib import asynccontextmanager
 from mine_backend.core.logging_config import setup_logger
-from mine_backend.config import get_admin
+from mine_backend.config import get_admin, settings
 
 from mine_backend.api.exception_handlers import (
     app_exception_handler,
@@ -31,15 +31,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title='Mine Backend', lifespan=lifespan)
 
-origins = [
-    "http://localhost:4200",   # Angular dev
-    "http://localhost:3000",   # React dev
-    "https://meudominio.com",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=settings.CORS_ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
