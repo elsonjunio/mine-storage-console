@@ -201,9 +201,9 @@ const STORAGE_KEY = 'mine_ai_conversations';
                 <div class="size-8 rounded-full flex items-center justify-center shrink-0 mt-1" [class]="agentAvatarClass">
                   <span class="material-symbols-outlined text-primary text-[18px]">smart_toy</span>
                 </div>
-                <div class="flex flex-col gap-1">
+                <div class="flex flex-col gap-1 min-w-0">
                   <span class="text-xs text-slate-400 ml-1">{{ 'AI_ASSISTANT.AGENT_NAME' | translate }}</span>
-                  <div class="md-content p-3.5 rounded-2xl rounded-tl-none text-sm leading-relaxed" [class]="agentBubbleClass"
+                  <div class="md-content p-3.5 rounded-2xl rounded-tl-none text-sm leading-relaxed min-w-0 overflow-hidden" [class]="agentBubbleClass"
                        [innerHTML]="renderMarkdown(msg.text)">
                   </div>
                   <span class="text-[10px] text-slate-500 ml-1">{{ formatTime(msg.timestamp) }}</span>
@@ -294,6 +294,7 @@ const STORAGE_KEY = 'mine_ai_conversations';
     }
 
     /* Markdown content styles */
+    :host ::ng-deep .md-content          { word-break: break-word; overflow-wrap: break-word; }
     :host ::ng-deep .md-content p        { margin-bottom: 0.6em; }
     :host ::ng-deep .md-content p:last-child { margin-bottom: 0; }
 
@@ -355,7 +356,8 @@ const STORAGE_KEY = 'mine_ai_conversations';
       margin: 0.8em 0;
     }
 
-    :host ::ng-deep .md-content table    { border-collapse: collapse; width: 100%; margin: 0.6em 0; font-size: 0.85em; }
+    :host ::ng-deep .md-content table    { border-collapse: collapse; min-width: 100%; margin: 0.6em 0; font-size: 0.85em; }
+    :host ::ng-deep .md-content .table-wrapper { overflow-x: auto; margin: 0.6em 0; }
     :host ::ng-deep .md-content th,
     :host ::ng-deep .md-content td       { border: 1px solid rgba(255,255,255,0.1); padding: 0.35em 0.65em; }
     :host ::ng-deep .md-content th       { background: rgba(255,255,255,0.06); font-weight: 600; }
