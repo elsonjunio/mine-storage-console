@@ -26,6 +26,12 @@ export const routes: Routes = [
       import('./features/bucket-detail/bucket-detail').then(m => m.BucketDetailComponent),
   },
   {
+    path: 'ai-assistant',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/ai-assistant/ai-assistant').then(m => m.AiAssistantComponent),
+  },
+  {
     path: 'users',
     canActivate: [adminGuard],
     loadComponent: () =>

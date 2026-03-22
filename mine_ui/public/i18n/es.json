@@ -14,7 +14,8 @@
       "CREDENTIALS": "Credenciales",
       "NOTIFICATIONS": "Notificaciones",
       "QUOTAS": "Cuotas",
-      "AUDIT_LOGS": "Registros de Auditoría"
+      "AUDIT_LOGS": "Registros de Auditoría",
+      "AI_ASSISTANT": "Asistente IA"
     },
     "FOOTER": {
       "BUILD": "Build de Desarrollo"
@@ -505,6 +506,23 @@
     "DELETE_MESSAGE": "¿Está seguro de que desea eliminar este usuario? Esto eliminará todas las credenciales y membresías de grupos. Esta acción no se puede deshacer.",
     "DELETE_CANCEL": "Cancelar",
     "DELETE_CONFIRM": "Eliminar"
+  },
+  "AI_ASSISTANT": {
+    "AGENT_NAME": "MCP Agent",
+    "AGENT_STATUS": "En Línea y Activo",
+    "WELCOME_MSG": "Hola, {{name}}. Estoy listo para ayudarte con tu infraestructura de almacenamiento. Pregúntame sobre uso, políticas o configuración de buckets.",
+    "YOU": "Tú",
+    "INPUT_PLACEHOLDER": "Pregunta cualquier cosa sobre tu almacenamiento...",
+    "DISCLAIMER": "La IA puede cometer errores. Verifica las acciones importantes.",
+    "CLEAR_CHAT": "Limpiar conversación",
+    "ERROR_GENERIC": "No se pudo conectar al backend de IA. Inténtalo de nuevo.",
+    "HISTORY_TITLE": "Conversaciones",
+    "HISTORY_EMPTY": "No hay conversaciones guardadas aún.",
+    "NEW_CHAT": "Nueva conversación",
+    "SAVE_CONV": "Guardar",
+    "SAVED": "Guardado",
+    "DELETE_CONV": "Eliminar conversación",
+    "TOGGLE_HISTORY": "Alternar historial de conversaciones"
   },
   "SEARCH": {
     "PLACEHOLDER": "Buscar recursos...",

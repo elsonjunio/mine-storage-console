@@ -5,6 +5,7 @@ interface AppConfig {
   keycloakUrl: string;
   keycloakRealm: string;
   keycloakClientId: string;
+  agentBackendUrl?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -39,5 +40,9 @@ export class ConfigService {
 
   get keycloakClientId(): string {
     return this.config.keycloakClientId;
+  }
+
+  get agentBackendUrl(): string {
+    return this.config.agentBackendUrl ?? '';
   }
 }

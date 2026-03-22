@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { ThemeService } from '../../../core/theme/theme.service';
 import { UserService } from '../../../core/auth/user.service';
+import { ConfigService } from '../../../core/api/config.service';
 
 interface NavItem {
   labelKey: string;
@@ -10,6 +11,7 @@ interface NavItem {
   route: string;
   badge?: number;
   adminOnly?: boolean;
+  requiresAgent?: boolean;
 }
 
 interface NavGroup {
@@ -78,12 +80,14 @@ interface NavGroup {
 export class SidebarComponent {
   private theme = inject(ThemeService);
   private userService = inject(UserService);
+  private config = inject(ConfigService);
 
   private readonly navGroups: NavGroup[] = [
     {
       labelKey: 'SIDEBAR.GROUPS.OPERATIONAL',
       items: [
         { labelKey: 'SIDEBAR.NAV.BUCKETS', icon: 'database', route: '/buckets' },
+        { labelKey: 'SIDEBAR.NAV.AI_ASSISTANT', icon: 'smart_toy', route: '/ai-assistant', requiresAgent: true },
       ],
     },
     {
@@ -106,7 +110,15 @@ export class SidebarComponent {
   ];
 
   readonly visibleNavGroups = computed(() =>
-    this.navGroups.filter(g => !g.adminOnly || this.userService.isAdmin()),
+    this.navGroups
+      .filter(g => !g.adminOnly || this.userService.isAdmin())
+      .map(g => ({
+        ...g,
+        items: g.items.filter(
+          item => !item.requiresAgent || !!this.config.agentBackendUrl,
+        ),
+      }))
+      .filter(g => g.items.length > 0),
   );
 
   private get dark(): boolean {
