@@ -28,6 +28,11 @@ class PolicyGroupsResponse(BaseModel):
     groups: List[str]
 
 
+class PolicyUsersResponse(BaseModel):
+    policy: str
+    users: List[str]
+
+
 class CreatePolicyRequest(BaseModel):
     name: str
     document: Dict[str, Any]

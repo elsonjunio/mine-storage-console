@@ -1,6 +1,6 @@
 [project]
 name = "mine"
-version = "0.1.0"
+version = "0.1.6"
 description = "MINE is a lightweight storage management platform."
 authors = [
     {name = "Elson Junio",email = "elsonjuniog@gmail.com"}
@@ -19,7 +19,7 @@ dependencies = [
     "python-json-logger (>=4.0.0,<5.0.0)",
     "python-multipart (>=0.0.22,<0.0.23)",
     "mcp (>=1.26.0,<2.0.0)",
-    "mine-spec @ git+https://github.com/elsonjunio/mine-spec.git@v0.1.4",
+    "mine-spec @ git+https://github.com/elsonjunio/mine-spec.git@v0.1.6",
     "redis (>=7.3.0,<8.0.0)",
 ]
 

@@ -24,6 +24,7 @@ import type {
   CreateCredentialRequest,
   PolicyResponse,
   PolicyGroupsResponse,
+  PolicyUsersResponse,
   CreatePolicyRequest,
   AttachPolicyRequest,
   PolicyAttachedResponse,
@@ -205,6 +206,10 @@ export class ApiService {
 
   getPolicyGroups(name: string): Observable<StandardResponse<PolicyGroupsResponse[]>> {
     return this.http.get<StandardResponse<PolicyGroupsResponse[]>>(this.url(API.POLICY_GROUPS(name)));
+  }
+
+  getPolicyUsers(name: string): Observable<StandardResponse<PolicyUsersResponse[]>> {
+    return this.http.get<StandardResponse<PolicyUsersResponse[]>>(this.url(API.POLICY_USERS(name)));
   }
 
   deletePolicy(name: string): Observable<StandardResponse<unknown>> {

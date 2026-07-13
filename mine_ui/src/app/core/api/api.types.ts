@@ -160,6 +160,11 @@ export interface PolicyGroupsResponse {
   groups: string[];
 }
 
+export interface PolicyUsersResponse {
+  policy: string;
+  users: string[];
+}
+
 export interface PolicyAttachedResponse {
   policies_attached?: string[] | null;
   user: string;

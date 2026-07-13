@@ -333,26 +333,56 @@ interface PolicyRow {
                     </div>
                   </div>
 
-                  <!-- Attach User -->
+                  <!-- Attached Users -->
                   <div class="rounded-xl border overflow-hidden" [class]="cardClass">
                     <div class="p-4 border-b flex justify-between items-center" [class]="cardHeaderClass">
                       <h3 class="font-semibold text-sm flex items-center gap-2" [class]="titleClass">
                         <span class="material-symbols-outlined text-[18px]" [class]="mutedClass">person</span>
                         {{ 'POLICIES.ATTACHED_USERS' | translate }}
                       </h3>
+                      <span class="text-xs px-2 py-0.5 rounded-full" [class]="countBadgeClass">
+                        {{ attachedUsers().length }}
+                      </span>
                     </div>
-                    <div class="p-3">
+                    <div class="p-2">
+                      @if (loadingAttachments()) {
+                        <div class="flex justify-center py-6">
+                          <span class="material-symbols-outlined animate-spin" [class]="mutedClass">progress_activity</span>
+                        </div>
+                      } @else if (attachedUsers().length === 0) {
+                        <p class="text-xs text-center py-4" [class]="mutedClass">{{ 'POLICIES.NO_USERS' | translate }}</p>
+                      } @else {
+                        @for (u of attachedUsers(); track u) {
+                          <div class="flex items-center justify-between p-2 rounded-lg group transition-colors" [class]="entityRowClass">
+                            <div class="flex items-center gap-3">
+                              <div class="size-8 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center text-xs text-white font-bold shrink-0">
+                                {{ u.slice(0, 2).toUpperCase() }}
+                              </div>
+                              <span class="text-sm font-medium" [class]="titleClass">{{ u }}</span>
+                            </div>
+                            <button
+                              (click)="detachFromUser(u)"
+                              [disabled]="detachingUser() === u"
+                              class="p-1 rounded opacity-0 group-hover:opacity-100 transition-all text-slate-500 hover:text-red-400 hover:bg-red-500/10"
+                              [title]="'POLICIES.DETACH_USER' | translate"
+                            >
+                              @if (detachingUser() === u) {
+                                <span class="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                              } @else {
+                                <span class="material-symbols-outlined text-[16px]">remove_circle_outline</span>
+                              }
+                            </button>
+                          </div>
+                        }
+                      }
                       <button
                         (click)="openAttachUserModal()"
-                        class="w-full py-2 border border-dashed rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
+                        class="w-full mt-2 py-2 border border-dashed rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1"
                         [class]="attachBtnClass"
                       >
                         <span class="material-symbols-outlined text-[14px]">add</span>
                         {{ 'POLICIES.ATTACH_USER_BTN' | translate }}
                       </button>
-                      <p class="text-[11px] text-center mt-2 px-2" [class]="mutedClass">
-                        {{ 'POLICIES.ATTACH_USER_NOTE' | translate }}
-                      </p>
                     </div>
                   </div>
 
@@ -640,7 +670,9 @@ export class PoliciesComponent implements OnInit {
   loadingUsers = signal(false);
   showAttachUserModal = signal(false);
   attachingUser = signal<string | null>(null);
+  detachingUser = signal<string | null>(null);
   userSearchText = signal('');
+  attachedUsers = signal<string[]>([]);
 
   // ─── Computed ─────────────────────────────────────────────────────────────
 
@@ -701,6 +733,7 @@ export class PoliciesComponent implements OnInit {
     this.editorOriginalContent.set('');
     this.attachedGroups.set([]);
     this.allGroups.set([]);
+    this.attachedUsers.set([]);
 
     this.loadingDetail.set(true);
     try {
@@ -730,9 +763,10 @@ export class PoliciesComponent implements OnInit {
   async loadAttachments(policyName: string) {
     this.loadingAttachments.set(true);
     try {
-      const [groupsRes, policyGroupsRes] = await Promise.all([
+      const [groupsRes, policyGroupsRes, policyUsersRes] = await Promise.all([
         firstValueFrom(this.api.listGroups()).catch(() => null),
         firstValueFrom(this.api.getPolicyGroups(policyName)).catch(() => null),
+        firstValueFrom(this.api.getPolicyUsers(policyName)).catch(() => null),
       ]);
 
       const allGroupNames = groupsRes?.data?.[0]?.groups ?? [];
@@ -740,6 +774,9 @@ export class PoliciesComponent implements OnInit {
 
       const attached = policyGroupsRes?.data?.[0]?.groups ?? [];
       this.attachedGroups.set(attached);
+
+      const users = policyUsersRes?.data?.[0]?.users ?? [];
+      this.attachedUsers.set(users);
     } finally {
       this.loadingAttachments.set(false);
     }
@@ -910,11 +947,28 @@ export class PoliciesComponent implements OnInit {
       await firstValueFrom(
         this.api.attachPolicy({ policy: policy.name, username }),
       );
+      this.attachedUsers.update(u => [...u, username]);
       this.showAttachUserModal.set(false);
     } catch (err) {
       this.toast.fromHttpError(err, `Failed to attach policy to user "${username}"`);
     } finally {
       this.attachingUser.set(null);
+    }
+  }
+
+  async detachFromUser(username: string) {
+    const policy = this.selectedPolicy();
+    if (!policy || this.detachingUser()) return;
+    this.detachingUser.set(username);
+    try {
+      await firstValueFrom(
+        this.api.detachPolicy({ policy: policy.name, username }),
+      );
+      this.attachedUsers.update(u => u.filter(x => x !== username));
+    } catch (err) {
+      this.toast.fromHttpError(err, `Failed to detach policy from user "${username}"`);
+    } finally {
+      this.detachingUser.set(null);
     }
   }
 

@@ -31,6 +31,7 @@ export const API = {
   POLICIES: '/policies',
   POLICY: (name: string) => `/policies/${encodeURIComponent(name)}`,
   POLICY_GROUPS: (name: string) => `/policies/${encodeURIComponent(name)}/groups`,
+  POLICY_USERS: (name: string) => `/policies/${encodeURIComponent(name)}/users`,
   POLICY_ATTACH: '/policies/attach',
   POLICY_DETACH: '/policies/detach',
 
